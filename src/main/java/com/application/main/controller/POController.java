@@ -52,7 +52,7 @@ import com.application.main.model.UserClass;
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
-@RequestMapping("/Vendorportal")
+@RequestMapping("/call/vendor/Vendorportal")
 public class POController {
 
 	@Autowired
