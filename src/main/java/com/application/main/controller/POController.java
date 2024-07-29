@@ -68,6 +68,12 @@ public class POController {
 	@Autowired
 	UserRepository userRepository;
 
+	@GetMapping("/version")
+	public String version(){
+		return "vendorPortalVersion: 1";
+	}
+	
+
 	public POController(MongoTemplate mongoTemplate) {
 		this.mongoTemplate = mongoTemplate;
 	}
