@@ -209,14 +209,14 @@ public class PoSummary {
 		this.username = username;
 	}
 
-	public PoSummary(String poNumber, String description, String poIssueDate, String deliveryDate, String deliveryPlant,
+	public PoSummary(String poNumber, String description, LocalDate poIssueDate, LocalDate deliveryDate, String deliveryPlant,
 			String deliveryTimelines, int noOfInvoices, String poStatus, String eic, String paymentType,
 			String poAmount, String receiver) {
 		// TODO Auto-generated constructor stub
 		this.poNumber = poNumber;
 		this.description = description;
-		this.poIssueDate = LocalDate.parse(poIssueDate);
-		this.deliveryDate = LocalDate.parse(deliveryDate);
+		this.poIssueDate = poIssueDate;
+		this.deliveryDate = deliveryDate;
 		this.poStatus = poStatus;
 		this.poAmount = poAmount;
 		this.noOfInvoices = noOfInvoices;

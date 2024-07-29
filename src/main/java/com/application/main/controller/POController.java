@@ -78,10 +78,12 @@ public class POController {
 	@PostMapping("/createPO")
 	public ResponseEntity<?> createPurchaseOrder(@RequestBody PoDTO podto) {
 		System.err.println("999999999999999999999999999999");
-//		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-
-		PoSummary ps = new PoSummary(podto.getPoNumber(), podto.getDescription(), podto.getPoIssueDate(),
-				podto.getDeliveryDate(), podto.getDeliveryPlant(), podto.getDeliveryTimelines(),
+		DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE;
+		LocalDate issuedt = LocalDate.parse(podto.getPoIssueDate(),formatter);
+		LocalDate delt = LocalDate.parse(podto.getDeliveryDate(),formatter);
+		
+		PoSummary ps = new PoSummary(podto.getPoNumber(), podto.getDescription(), issuedt,
+				delt, podto.getDeliveryPlant(), podto.getDeliveryTimelines(),
 				podto.getNoOfInvoices(), podto.getPoStatus(), podto.getEic(), podto.getPaymentType(),
 				podto.getPoAmount(), podto.getReceiver());
 
@@ -200,14 +202,22 @@ public class POController {
 	}
 
 	@GetMapping("/getAllInvoices")
-	public Page<InvoiceDTO> getAllInvoices(@RequestParam(defaultValue = "0") int page,
+	public ResponseEntity<?> getAllInvoices(@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "10") int size) {
 		Pageable pageable = PageRequest.of(page, size, Sort.by("invoicedate").descending());
 
+//		Page<InvoiceDTO> invoicepage = invoiceRepository.findAll(pageable).map()
 		Page<Invoice> invoicepage = invoiceRepository.findAll(pageable);
-		return invoicepage.map(po -> new InvoiceDTO(po.getPoNumber(), po.getDeliveryTimelines(), po.getInvoiceDate(),
+		Page<InvoiceDTO> invoicedtopage = invoicepage.map(po->new InvoiceDTO(po.getPoNumber(), po.getDeliveryTimelines(), po.getInvoiceDate(),
 				po.getClaimedBy(), po.getRoleName(), po.getDeliveryPlant(), po.getMobileNumber(), po.getEic(),
 				po.getType(), po.getMsmeCategory(), po.getPaymentType()));
+//		List<InvoiceDTO> invoicelist = invoiceRepository.findAll().stream().map(po->new InvoiceDTO(po.getPoNumber(), po.getDeliveryTimelines(), po.getInvoiceDate(),
+//				po.getClaimedBy(), po.getRoleName(), po.getDeliveryPlant(), po.getMobileNumber(), po.getEic(),
+//				po.getType(), po.getMsmeCategory(), po.getPaymentType())).collect(Collectors.toList());
+//		System.out.println(invlist);
+//		System.out.println(invoicedtopage);
+		return ResponseEntity.ok(invoicedtopage);
+//		return ResponseEntity.ok(invoicepage);
 	}
 	
 	@GetMapping("/dateparsingcheck")

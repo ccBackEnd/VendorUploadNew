@@ -2,9 +2,11 @@ package com.application.main.model;
 
 import java.time.LocalDate;
 
+import org.springframework.boot.autoconfigure.data.web.SpringDataWebProperties.Pageable;
+
 import com.fasterxml.jackson.annotation.JsonFormat;
 
-public class InvoiceDTO {
+public class InvoiceDTO extends Pageable {
 		private String poNumber;
 //		private String termAndConditions;
 		private String deliveryTimelines;

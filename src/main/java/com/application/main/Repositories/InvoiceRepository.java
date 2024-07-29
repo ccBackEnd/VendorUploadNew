@@ -3,6 +3,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,6 +13,9 @@ import com.application.main.model.Invoice;
 @Repository
 public interface InvoiceRepository extends MongoRepository<Invoice, String> {
 	//Optional<Invoice> findBypoNumber(String poNumber);
+	
+
+	Page<Invoice> findAll(Pageable pageable);
 	Invoice findBypoNumber(String poNumber);
 	
 	Optional<Invoice>findById(String id);

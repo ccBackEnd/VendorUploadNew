@@ -14,11 +14,9 @@ import java.util.Set;
 import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
@@ -126,11 +124,12 @@ public class AwsService {
 		Optional<PoSummary> po = porepo.findByPoNumber(poNumber);
 		
 		if (po!=null) {
-			if(po.get().getInvoiceobject().isEmpty() || po.get().getInvoiceobject()==null) {
+			if(po.get().getInvoiceobject()==null || po.get().getInvoiceobject().isEmpty()) {
 			List<Invoice> li = new ArrayList<>();
 			li.add(invoice);
 			po.get().setInvoiceobject(li);
 		}
+			else po.get().getInvoiceobject().add(invoice);
 		}
 			else return Map.of("Error Found" ,HttpStatus.SC_SERVICE_UNAVAILABLE );
 //		else return new HashMap<>().put("Error Found", HttpStatus.SC_SERVICE_UNAVAILABLE);
@@ -146,7 +145,7 @@ public class AwsService {
 		System.out.println("Invoice with details :-> \n" + invoice.toString() + " is saved succesfully");
 		System.out.println("invoiceFileUrlList: " + invoiceFileUrlList);
 		System.out.println("supportingDocumentUrls: " + supportingDocumentUrls);
-		Map<String, Object> responseData = null;
+		Map<String, Object> responseData = new HashMap<>();
 		System.err.println("---------------------------------");
 
 		responseData.put("alternateNumber", alternateMobileNumber);
@@ -166,7 +165,6 @@ public class AwsService {
 		responseData.put("receievedBy", receievedBy);
 		responseData.put("deliveryPlant", deliveryPlant);
 		responseData.put("InvoiceNumber", invoiceNumber);
-
 		return responseData;
 	}
 	public ResponseEntity<String> uploadCompliance(String token, MultipartFile file) {
