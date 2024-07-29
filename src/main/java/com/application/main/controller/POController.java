@@ -102,8 +102,9 @@ public class POController {
 	public ResponseEntity<?> getPurchaseOrder(@RequestParam String ponumber) {
 		Optional<PoSummary> po = porepo.findByPoNumber(ponumber);
 		if(po==null) return ResponseEntity.ok(HttpStatus.NOT_FOUND);
-		return ResponseEntity.ok(po.get());
-
+		PoDTO podto = new PoDTO(po.get().getPoNumber(), po.get().getDescription(), po.get().getPoIssueDate(), po.get().getDeliveryDate(), po.get().getPoStatus(), po.get().getPoAmount(),po.get().getNoOfInvoices(), po.get().getDeliveryTimelines(), po.get().getDeliveryPlant(), po.get().getPaymentType(), po.get().getEic(), po.get().getReceiver());
+		return ResponseEntity.ok(podto);
+			
 	}
 
 	@GetMapping("/getAllRoles")
