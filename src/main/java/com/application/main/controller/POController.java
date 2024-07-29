@@ -461,7 +461,7 @@ public class POController {
 	public ResponseEntity<?> updateInvoice(@RequestHeader("remarks") Set<String> remarks,
 			@RequestHeader("id") String invoiceId) {
 		Optional<Invoice> invoiceOptional = invoiceRepository.findById(invoiceId);
-		if (invoiceOptional.isEmpty())
+		if (invoiceOptional.isEmpty() || !invoiceOptional.isPresent())
 			return ResponseEntity.badRequest().body("invoice with this id does not exist");
 		Invoice invoice = invoiceOptional.get();
 		invoice.setRemarks(remarks);
@@ -528,7 +528,7 @@ public class POController {
 
 		// Retrieve the invoice from the database using the invoiceId
 		Optional<Invoice> invoiceOptional = invoiceRepository.findById(id);
-		if (invoiceOptional.isEmpty()) {
+		if (invoiceOptional.isEmpty() || !invoiceOptional.isPresent()) {
 			return ResponseEntity.notFound().build();
 		}
 		Invoice invoice = invoiceOptional.get();

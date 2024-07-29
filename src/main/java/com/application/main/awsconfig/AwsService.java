@@ -123,7 +123,7 @@ public class AwsService {
 		
 		Optional<PoSummary> po = porepo.findByPoNumber(poNumber);
 		
-		if (po!=null) {
+		if (!po.isPresent()) {
 			if(po.get().getInvoiceobject()==null || po.get().getInvoiceobject().isEmpty()) {
 			List<Invoice> li = new ArrayList<>();
 			li.add(invoice);
