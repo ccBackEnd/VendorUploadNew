@@ -120,10 +120,12 @@ public class POController {
 			DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE;
 			LocalDate issuedt = LocalDate.parse(poIssueDate, formatter);
 			LocalDate delt = LocalDate.parse(deliveryDate, formatter);
-
+			System.err.println("---------");
 			PoSummary ps = new PoSummary(poNumber, description, issuedt, delt, deliveryPlant, deliveryTimelines, 0,
 					poStatus, eic, paymentType, poAmount, receiver);
+			System.err.println("---------");
 			ps.setUrl(s3service.uploadFile(filePO));
+			System.err.println("---------");
 			porepo.save(ps);
 			System.err.println("Po Creation Successfully Ended");
 		} catch (Exception e) {
