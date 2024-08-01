@@ -178,7 +178,6 @@ public class PoSummary {
 	public PoSummary() {
 	}
 
-
 	public LocalDate getPoIssueDate() {
 		return poIssueDate;
 	}
@@ -209,9 +208,9 @@ public class PoSummary {
 		this.username = username;
 	}
 
-	public PoSummary(String poNumber, String description, LocalDate poIssueDate, LocalDate deliveryDate, String deliveryPlant,
-			String deliveryTimelines, int noOfInvoices, String poStatus, String eic, String paymentType,
-			String poAmount, String receiver) {
+	public PoSummary(String poNumber, String description, LocalDate poIssueDate, LocalDate deliveryDate,
+			String deliveryPlant, String deliveryTimelines, int noOfInvoices, String poStatus, String eic,
+			String paymentType, String poAmount, String receiver, String username, String url) {
 		// TODO Auto-generated constructor stub
 		this.poNumber = poNumber;
 		this.description = description;
@@ -225,5 +224,7 @@ public class PoSummary {
 		this.paymentType = paymentType;
 		this.eic = eic;
 		this.receiver = receiver;
+		this.url = url;
+		this.username = username;
 	}
 }

@@ -57,7 +57,7 @@ public class AwsService {
 
 	public String uploadFile(MultipartFile file) throws IOException {
 		AmazonS3 awsClient = s3client.awsClientConfiguration(token);
-		if (file == null)
+		if (file == null || file.isEmpty() )
 			return "";
 		ObjectMetadata obm = new ObjectMetadata();
 		String fileName = file.getOriginalFilename();

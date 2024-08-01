@@ -135,7 +135,7 @@ public class POController {
 			@RequestParam(value = "paymentType") String paymentType, 
 			@RequestParam(value = "eic") String eic,
 			@RequestParam(value = "receiver",required=false) String receiver, 
-			@RequestParam(value = "file",required = false) MultipartFile filePO,
+			@RequestParam(value = "filePO",required = false) MultipartFile filePO,
 			HttpServletRequest request){
 		String token = request.getHeader("Authorization").replace("Bearer ", "");
 		System.err.println("Po Creation Initiated");
@@ -146,7 +146,7 @@ public class POController {
 			LocalDate delt = LocalDate.parse(deliveryDate, formatter);
 			System.err.println("---------");
 			PoSummary ps = new PoSummary(poNumber, description, issuedt, delt, deliveryPlant, deliveryTimelines, 0,
-					poStatus, eic, paymentType, poAmount, receiver);
+					poStatus, eic, paymentType, poAmount, receiver , getUserNameFromToken(token),s3service.uploadFile(filePO));
 			System.err.println("---------");
 //			ps.setUrl(s3service.uploadFile(filePO));
 			ps.setUsername(getUserNameFromToken(token));
