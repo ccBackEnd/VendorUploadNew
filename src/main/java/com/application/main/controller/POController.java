@@ -144,16 +144,17 @@ public class POController {
 			DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE;
 			LocalDate issuedt = LocalDate.parse(poIssueDate, formatter);
 			LocalDate delt = LocalDate.parse(deliveryDate, formatter);
-			System.err.println("---------");
+			String username = getUserNameFromToken(token);
+			String url = s3service.uploadFile(filePO);
+			System.err.println("---------" + username + "--------" + url);
 			PoSummary ps = new PoSummary(poNumber, description, issuedt, delt, deliveryPlant, deliveryTimelines, 0,
-					poStatus, eic, paymentType, poAmount, receiver , getUserNameFromToken(token),s3service.uploadFile(filePO));
-			System.err.println("---------");
-//			ps.setUrl(s3service.uploadFile(filePO));
-			ps.setUsername(getUserNameFromToken(token));
+					poStatus, eic, paymentType, poAmount, receiver , username,url);
+			System.err.println("----Object Created----");
 			System.err.println("---------");
 			porepo.save(ps);
 			System.err.println("Po Creation Successfully Ended");
 		} catch (Exception e) {
+			System.out.println("Exception Found");
 			return ResponseEntity.ok(e);
 		}
 		return ResponseEntity.ok("saved");
