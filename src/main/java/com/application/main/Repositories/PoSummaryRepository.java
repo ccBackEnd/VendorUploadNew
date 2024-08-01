@@ -13,4 +13,5 @@ public interface PoSummaryRepository extends MongoRepository<PoSummary, String> 
 	Optional<PoSummary> findByPoNumber(String poNumber);
 	List<PoSummary> findByEic(String eic);
 	List<PoSummary> findByPoStatus(String poStatus);
+	Optional<List<PoSummary>> findByUsername(String username);
 }

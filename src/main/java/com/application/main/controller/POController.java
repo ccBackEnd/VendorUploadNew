@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -48,6 +49,8 @@ import com.application.main.model.InvoiceDTO;
 import com.application.main.model.PoDTO;
 import com.application.main.model.PoSummary;
 import com.application.main.model.UserClass;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -93,7 +96,26 @@ public class POController {
 	public LocalDate testing() {
 		return LocalDate.now();
 	}
+	private String getUserNameFromToken(String token) {
+		
+		String tokenBody = token.split("\\.")[1];
+		Base64.Decoder decoder = Base64.getUrlDecoder();
+		String payload = new String(decoder.decode(tokenBody));
+		System.out.println("payload" + payload);
+		return getFieldFromJson(payload, "preferred_username");
+	}
 
+	private String getFieldFromJson(String json, String fieldName) {
+		String fieldValue = null;
+		try {
+			ObjectMapper objectMapper = new ObjectMapper();
+			JsonNode jsonNode = objectMapper.readTree(json);
+			fieldValue = jsonNode.get(fieldName).asText();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return fieldValue;
+	}
 	public Page<?> convertStreamToPage(Stream<?> entityStream, int page, int size) {
 		List<?> entityList = entityStream.collect(Collectors.toList());
 		Pageable pageable = PageRequest.of(page, size);
@@ -113,7 +135,9 @@ public class POController {
 			@RequestParam(value = "paymentType") String paymentType, 
 			@RequestParam(value = "eic") String eic,
 			@RequestParam(value = "receiver",required=false) String receiver, 
-			@RequestParam(value = "file",required=false) MultipartFile filePO) {
+			@RequestParam(value = "file") MultipartFile filePO,
+			HttpServletRequest request){
+		String token = request.getHeader("Authorization").replace("Bearer ", "");
 		System.err.println("Po Creation Initiated");
 
 		try {
@@ -125,6 +149,7 @@ public class POController {
 					poStatus, eic, paymentType, poAmount, receiver);
 			System.err.println("---------");
 			ps.setUrl(s3service.uploadFile(filePO));
+			ps.setUsername(getUserNameFromToken(token));
 			System.err.println("---------");
 			porepo.save(ps);
 			System.err.println("Po Creation Successfully Ended");
@@ -224,7 +249,13 @@ public class POController {
 		List<String> roles = Arrays.asList("HR", "Finance", "Admin", "Admin2");
 		return roles;
 	}
-
+	
+	@GetMapping("/poSummary/getSummary")
+	public ResponseEntity<?> getPobyUsername(@RequestParam(value = "username",required=false) String username){
+		Optional<List<PoSummary>> polist =  porepo.findByUsername(username);
+		if(polist.isEmpty()) throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, "NO PO FOUND!", null);
+		return ResponseEntity.ok(polist.get());
+	}
 	@GetMapping("/getAllPo")
 	public Page<PoDTO> getAllPo(@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "10") int size) {
