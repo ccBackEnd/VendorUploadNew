@@ -13,21 +13,21 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -69,10 +69,9 @@ public class POController {
 	UserRepository userRepository;
 
 	@GetMapping("/version")
-	public String version(){
+	public String version() {
 		return "vendorPortalVersion: 1";
 	}
-	
 
 	public POController(MongoTemplate mongoTemplate) {
 		this.mongoTemplate = mongoTemplate;
@@ -81,64 +80,55 @@ public class POController {
 	@Autowired
 	InvoiceRepository invoiceRepository;
 
+	@GetMapping("/dateparsingcheck")
+	public LocalDate parsed(@RequestParam String invoiceDate) {
+
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+		LocalDate date = LocalDate.parse(invoiceDate, formatter);
+		System.out.println(date);
+		return date;
+	}
+
+	@GetMapping("/testing")
+	public LocalDate testing() {
+		return LocalDate.now();
+	}
+
+	public Page<?> convertStreamToPage(Stream<?> entityStream, int page, int size) {
+		List<?> entityList = entityStream.collect(Collectors.toList());
+		Pageable pageable = PageRequest.of(page, size);
+		return new PageImpl<>(entityList, pageable, entityList.size());
+	}
+
 	@PostMapping("/createPO")
-	public ResponseEntity<?> createPurchaseOrder(@RequestBody PoDTO podto) {
+	public ResponseEntity<?> createPurchaseOrder(@RequestParam(value = "poNumber") String poNumber,
+			@RequestParam(value = "description") String description,
+			@RequestParam(value = "poIssueDate") @DateTimeFormat(pattern = "yyyy-MM-dd") String poIssueDate,
+			@RequestParam(value = "deliveryDate") @DateTimeFormat(pattern = "yyyy-MM-dd") String deliveryDate,
+			@RequestParam(value = "poStatus") String poStatus, @RequestParam(value = "poAmount") String poAmount,
+			@RequestParam(value = "deliveryTimelines") String deliveryTimelines,
+			@RequestParam(value = "deliveryPlant") String deliveryPlant,
+			@RequestParam(value = "paymentType") String paymentType, @RequestParam(value = "eic") String eic,
+			@RequestParam(value = "receiver") String receiver, @RequestParam MultipartFile filePO) {
 		System.err.println("999999999999999999999999999999");
-		DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE;
-		LocalDate issuedt = LocalDate.parse(podto.getPoIssueDate(),formatter);
-		LocalDate delt = LocalDate.parse(podto.getDeliveryDate(),formatter);
-		
-		PoSummary ps = new PoSummary(podto.getPoNumber(), podto.getDescription(), issuedt,
-				delt, podto.getDeliveryPlant(), podto.getDeliveryTimelines(),
-				podto.getNoOfInvoices(), podto.getPoStatus(), podto.getEic(), podto.getPaymentType(),
-				podto.getPoAmount(), podto.getReceiver());
 
-		porepo.save(ps);
-		return ResponseEntity.ok("saved");
+		try {
+			DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE;
+			LocalDate issuedt = LocalDate.parse(poIssueDate, formatter);
+			LocalDate delt = LocalDate.parse(deliveryDate, formatter);
 
-	}
-
-	@GetMapping("/GetPo")
-	public ResponseEntity<?> getPurchaseOrder(@RequestParam String ponumber) {
-		Optional<PoSummary> po = porepo.findByPoNumber(ponumber);
-		if(po==null) return ResponseEntity.ok(HttpStatus.NOT_FOUND);
-		PoDTO podto = new PoDTO(po.get().getPoNumber(), po.get().getDescription(), po.get().getPoIssueDate(), po.get().getDeliveryDate(), po.get().getPoStatus(), po.get().getPoAmount(),po.get().getNoOfInvoices(), po.get().getDeliveryTimelines(), po.get().getDeliveryPlant(), po.get().getPaymentType(), po.get().getEic(), po.get().getReceiver());
-		return ResponseEntity.ok(podto);
-			
-	}
-
-	@GetMapping("/getAllRoles")
-	public List<String> getAllRoles() {
-		List<String> roles = Arrays.asList("hr", "finance", "admin", "admin2");
-		return roles;
-	}
-
-	@GetMapping("/getAllPo")
-	public Page<PoDTO> getAllPo(@RequestParam(defaultValue = "0") int page,
-			@RequestParam(defaultValue = "10") int size) {
-		Pageable pageable = PageRequest.of(page, size, Sort.by("poIssueDate").descending());
-
-		Page<PoSummary> poPage = porepo.findAll(pageable);
-
-		return poPage.map(po -> new PoDTO(po.getPoNumber(), po.getDescription(), po.getPoIssueDate(),
-				po.getDeliveryDate(), po.getPoStatus(), po.getPoAmount(), po.getNoOfInvoices(),
-				po.getDeliveryTimelines(), po.getDeliveryPlant(), po.getPaymentType(), po.getEic(), po.getReceiver()));
-	}
-
-	@GetMapping("/email")
-	public ResponseEntity<String> getEmailByEic(@RequestParam("eic") String eic) {
-		UserClass user = userRepository.findByEic(eic);
-
-		if (user != null) {
-			return ResponseEntity.ok(user.getEmail());
-		} else {
-			return ResponseEntity.notFound().build();
+			PoSummary ps = new PoSummary(poNumber, description, issuedt, delt, deliveryPlant, deliveryTimelines, 0,
+					poStatus, eic, paymentType, poAmount, receiver);
+			ps.setUrl(s3service.uploadFile(filePO));
+			porepo.save(ps);
+		} catch (Exception e) {
+			return ResponseEntity.ok(e);
 		}
+		return ResponseEntity.ok("saved");
 	}
 
 	@PostMapping("/uploadInvoice")
-	public ResponseEntity<?> createInvoice(
-			@RequestParam("poNumber") String poNumber,
+	public ResponseEntity<?> createInvoice(@RequestParam("poNumber") String poNumber,
 			@RequestParam("file") MultipartFile invoiceFile,
 			@RequestPart(name = "supportingDocument", required = false) List<MultipartFile> supportingDocument,
 			@RequestParam(value = "roleName", required = false) String roleName,
@@ -146,8 +136,7 @@ public class POController {
 			@RequestParam(value = "alternateMobileNumber", required = false) String alternateMobileNumber,
 			@RequestParam(value = "alternateEmail", required = false) String alternateEmail,
 			@RequestParam(value = "remarks", required = false) Set<String> remarks,
-			@RequestParam("invoiceAmount") String invoiceAmount,
-			@RequestParam("invoiceDate") String invoiceDate,
+			@RequestParam("invoiceAmount") String invoiceAmount, @RequestParam("invoiceDate") String invoiceDate,
 			@RequestParam("invoiceNumber") String invoiceNumber,
 			@RequestParam(name = "validityDate", required = false) String validityDate,
 			@RequestParam(name = "termAndConditions", required = false) String termAndConditions,
@@ -198,14 +187,45 @@ public class POController {
 
 		System.out.println("receievedBy: " + receievedBy);
 		System.out.println("createdBy" + createdBy);
-		
-		Map<String, Object> uploadMongoFile = s3service.uploadMongoFile(invoiceFileUrlList, supportingDocumentUrls,
-				eic, roleName, poNumber, token, alternateMobileNumber, alternateEmail, remarks, invoiceAmount,
-				invoiceDate, invoiceNumber, username, createdBy, deliveryPlant, invoicedetails, suppDocNameList, status,
+
+		Map<String, Object> uploadMongoFile = s3service.uploadMongoFile(invoiceFileUrlList, supportingDocumentUrls, eic,
+				roleName, poNumber, token, alternateMobileNumber, alternateEmail, remarks, invoiceAmount, invoiceDate,
+				invoiceNumber, username, createdBy, deliveryPlant, invoicedetails, suppDocNameList, status,
 				receievedBy);
 		if (uploadMongoFile == null)
 			return ResponseEntity.ok(HttpStatus.METHOD_FAILURE);
 		return ResponseEntity.ok(uploadMongoFile);
+	}
+
+	@GetMapping("/GetPo")
+	public ResponseEntity<?> getPurchaseOrder(@RequestParam String ponumber) {
+		Optional<PoSummary> po = porepo.findByPoNumber(ponumber);
+		if (po == null)
+			return ResponseEntity.ok(HttpStatus.NOT_FOUND);
+		PoDTO podto = new PoDTO(po.get().getPoNumber(), po.get().getDescription(), po.get().getPoIssueDate(),
+				po.get().getDeliveryDate(), po.get().getPoStatus(), po.get().getPoAmount(), po.get().getNoOfInvoices(),
+				po.get().getDeliveryTimelines(), po.get().getDeliveryPlant(), po.get().getPaymentType(),
+				po.get().getEic(), po.get().getReceiver());
+		return ResponseEntity.ok(podto);
+
+	}
+
+	@GetMapping("/getAllRoles")
+	public List<String> getAllRoles() {
+		List<String> roles = Arrays.asList("HR", "Finance", "Admin", "Admin2");
+		return roles;
+	}
+
+	@GetMapping("/getAllPo")
+	public Page<PoDTO> getAllPo(@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "10") int size) {
+		Pageable pageable = PageRequest.of(page, size, Sort.by("poIssueDate").descending());
+
+		Page<PoSummary> poPage = porepo.findAll(pageable);
+
+		return poPage.map(po -> new PoDTO(po.getPoNumber(), po.getDescription(), po.getPoIssueDate(),
+				po.getDeliveryDate(), po.getPoStatus(), po.getPoAmount(), po.getNoOfInvoices(),
+				po.getDeliveryTimelines(), po.getDeliveryPlant(), po.getPaymentType(), po.getEic(), po.getReceiver()));
 	}
 
 	@GetMapping("/getAllInvoices")
@@ -213,51 +233,51 @@ public class POController {
 			@RequestParam(defaultValue = "10") int size) {
 		Pageable pageable = PageRequest.of(page, size, Sort.by("invoicedate").descending());
 
-//		Page<InvoiceDTO> invoicepage = invoiceRepository.findAll(pageable).map()
 		Page<Invoice> invoicepage = invoiceRepository.findAll(pageable);
-		Page<InvoiceDTO> invoicedtopage = invoicepage.map(po->new InvoiceDTO(po.getPoNumber(), po.getDeliveryTimelines(), po.getInvoiceDate(),
-				po.getClaimedBy(), po.getRoleName(), po.getDeliveryPlant(), po.getMobileNumber(), po.getEic(),
-				po.getType(), po.getMsmeCategory(), po.getPaymentType()));
-//		List<InvoiceDTO> invoicelist = invoiceRepository.findAll().stream().map(po->new InvoiceDTO(po.getPoNumber(), po.getDeliveryTimelines(), po.getInvoiceDate(),
-//				po.getClaimedBy(), po.getRoleName(), po.getDeliveryPlant(), po.getMobileNumber(), po.getEic(),
-//				po.getType(), po.getMsmeCategory(), po.getPaymentType())).collect(Collectors.toList());
-//		System.out.println(invlist);
-//		System.out.println(invoicedtopage);
+		Page<InvoiceDTO> invoicedtopage = invoicepage
+				.map(po -> new InvoiceDTO(po.getPoNumber(), po.getDeliveryTimelines(), po.getInvoiceDate(),
+						po.getClaimedBy(), po.getRoleName(), po.getDeliveryPlant(), po.getMobileNumber(), po.getEic(),
+						po.getType(), po.getMsmeCategory(), po.getPaymentType()));
 		return ResponseEntity.ok(invoicedtopage);
-//		return ResponseEntity.ok(invoicepage);
 	}
-	
-	@GetMapping("/dateparsingcheck")
-	public LocalDate parsed(@RequestParam String  invoiceDate) {
-		
-		   DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-	        LocalDate date = LocalDate.parse(invoiceDate, formatter);
-	        System.out.println(date);
-	        return date;
-	}
-	@GetMapping("getInvoice")
-	public ResponseEntity<InvoiceDTO> getInvoicesBypoNumber(@RequestParam(value = "poNumber") String poNumber) {
-		System.err.println("get PO");
-		Invoice invoice = invoiceRepository.findByPoNumber(poNumber);
 
-		if (invoice != null) {
-			InvoiceDTO invoiceDTO = new InvoiceDTO();
+	@GetMapping("/email")
+	public ResponseEntity<String> getEmailByEic(@RequestParam("eic") String eic) {
+		UserClass user = userRepository.findByEic(eic);
 
-			invoiceDTO.setRoleName(invoice.getRoleName());
-			invoiceDTO.setEic(invoice.getEic());
-			invoiceDTO.setDeliveryPlant(invoice.getDeliveryPlant());
-			invoiceDTO.setMobileNumber(invoice.getMobileNumber());
-			invoiceDTO.setEmail(invoice.getEmail());
-			invoiceDTO.setPaymentType(invoice.getPaymentType());
-			invoiceDTO.setType(invoice.getType());
-			invoiceDTO.setMsmeCategory(invoice.getMsmeCategory());
-
-			System.out.println("::GET " + invoiceDTO);
-
-			return ResponseEntity.status(HttpStatus.OK).body(invoiceDTO);
+		if (user != null) {
+			return ResponseEntity.ok(user.getEmail());
+		} else {
+			return ResponseEntity.notFound().build();
 		}
+	}
 
-		throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No invoices found");
+	@GetMapping("getInvoice")
+	public ResponseEntity<?> getInvoicesBypoNumber(@RequestParam(value = "poNumber") String poNumber,
+			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
+			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+		Pageable pageable = PageRequest.of(page, size);
+		System.err.println("get PO");
+		Page<InvoiceDTO> invoice1 = invoiceRepository.findByPoNumber(poNumber, pageable);
+
+//		if (!invoice1.isPresent())
+//			return ResponseEntity.ok(HttpStatus.NOT_FOUND);
+//
+//		Invoice invoice = invoice1.get();
+//		InvoiceDTO invoiceDTO = new InvoiceDTO();
+//
+//		invoiceDTO.setRoleName(invoice.getRoleName());
+//		invoiceDTO.setEic(invoice.getEic());
+//		invoiceDTO.setDeliveryPlant(invoice.getDeliveryPlant());
+//		invoiceDTO.setMobileNumber(invoice.getMobileNumber());
+//		invoiceDTO.setEmail(invoice.getEmail());
+//		invoiceDTO.setPaymentType(invoice.getPaymentType());
+//		invoiceDTO.setType(invoice.getType());
+//		invoiceDTO.setMsmeCategory(invoice.getMsmeCategory());
+//
+//		System.out.println("::GET " + invoiceDTO);
+
+		return ResponseEntity.status(HttpStatus.OK).body(invoice1);
 	}
 
 	@PostMapping("/updateClaimedStatus")
@@ -276,9 +296,12 @@ public class POController {
 	}
 
 	@GetMapping("/invoices")
-	public ResponseEntity<List<Invoice>> getInvoicesByUsernameAndClaimedTrue(
-			@RequestParam("username") String username) {
-		List<Invoice> invoice = invoiceRepository.findByUsernameAndClaimedIsTrue(username);
+	public ResponseEntity<Page<InvoiceDTO>> getInvoicesByUsernameAndClaimedTrue(
+			@RequestParam("username") String username,
+			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
+			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+		Pageable pageable = PageRequest.of(page, size);
+		Page<InvoiceDTO> invoice = invoiceRepository.findByUsernameAndClaimedIsTrue(username, pageable);
 
 		if (!invoice.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.OK).body(invoice);
@@ -289,78 +312,92 @@ public class POController {
 	}
 
 	@GetMapping("getData")
-	public ResponseEntity<List<Invoice>> getInvoicesByParameters(
-			@RequestParam(value = "username", required = false) String username,
+	public Page<InvoiceDTO> getInvoicesByParameters(@RequestParam(value = "username", required = false) String username,
 			@RequestParam(value = "poNumber", required = false) String poNumber,
-			@RequestParam(value = "invoiceNumber", required = false) String invoiceNumber) {
-
-		if (poNumber == null && invoiceNumber == null) {
-			if (username == null) {
-				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Please provide atleast one detail !!");
-			}
-			// If only username is provided, return all invoices with that username
-			if (username != null) {
-				List<Invoice> invoicesByUsername = invoiceRepository.findByUsername(username);
-				if (invoicesByUsername.isEmpty()) {
-					throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-							"No invoices found for the given username.");
-				}
-				return new ResponseEntity<>(invoicesByUsername, HttpStatus.OK);
-			}
+			@RequestParam(value = "invoiceNumber", required = false) String invoiceNumber,
+			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
+			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+		Pageable pageable = PageRequest.of(page, size);
+		if (poNumber == null && invoiceNumber == null && username == null) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Please provide atleast one detail !!");
+		}
+		if (username != null && poNumber == null && invoiceNumber == null) {
+			return invoiceRepository.findByUsername(username, pageable);
 		}
 
-		// If poNumber is provided, search by username and poNumber
-		if (poNumber != null) {
-			List<Invoice> invoicesBypoNumber = invoiceRepository.findByUsernameAndPoNumber(username, poNumber);
-			if (!invoicesBypoNumber.isEmpty()) {
-				return new ResponseEntity<>(invoicesBypoNumber, HttpStatus.OK);
-			}
+		// Find by poNumber only
+		if (poNumber != null && username == null && invoiceNumber == null) {
+			return invoiceRepository.findByPoNumber(poNumber, pageable);
 		}
 
-		// If invoiceNumber is provided, search by username and invoiceNumber
-		if (invoiceNumber != null) {
-			List<Invoice> invoicesByinvoiceNumber = invoiceRepository.findByUsernameAndInvoiceNumber(username,
-					invoiceNumber);
-			if (!invoicesByinvoiceNumber.isEmpty()) {
-				return new ResponseEntity<>(invoicesByinvoiceNumber, HttpStatus.OK);
-			}
+		// Find by invoiceNumber only
+		if (invoiceNumber != null && username == null && poNumber == null) {
+			return invoiceRepository.findByInvoiceNumber(invoiceNumber, pageable);
 		}
 
-		throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No invoices found");
+		// Find by poNumber and invoiceNumber
+		if (poNumber != null && invoiceNumber != null) {
+			return invoiceRepository.findByPoNumberAndInvoiceNumber(poNumber, invoiceNumber, pageable);
+		}
+
+		// Find by poNumber and username
+		if (poNumber != null && username != null) {
+			return invoiceRepository.findByUsernameAndPoNumber(username, poNumber, pageable);
+		}
+
+		// Find by username and invoiceNumber
+		if (username != null && invoiceNumber != null) {
+			return invoiceRepository.findByUsernameAndInvoiceNumber(username, invoiceNumber, pageable);
+		}
+
+		else
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "NO DATA FOUND");
 	}
 
-	@GetMapping("searchInvoices")
-	public ResponseEntity<List<Invoice>> searchInvoices(
-			@RequestParam(value = "searchItems", required = false) String searchItems,
-			@RequestParam(value = "username", required = true) String username) {
-		List<Invoice> invoices = new ArrayList<>();
+//	@GetMapping("searchInvoices")
+//	public ResponseEntity<List<Invoice>> searchInvoices(
+//			@RequestParam(value = "searchItems", required = false) String searchItems,
+//			@RequestParam(value = "username", required = true) String username,
+//			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
+//			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+//		Page<InvoiceDTO> invoicedtopage = null;
+//		Pageable pageable = PageRequest.of(page, size);
+//		if (searchItems == null || searchItems.isEmpty()) { // Check if searchItems is null or empty
+//			invoicedtopage = invoiceRepository.findByUsername(username, pageable); // Fetch data based on username only
+//		} else {
+//			Criteria criteria = new Criteria().andOperator(Criteria.where("username").is(username),
+//					new Criteria().orOperator(Criteria.where("poNumber").regex(searchItems),
+//							Criteria.where("deliveryTimelines").regex(searchItems),
+//							Criteria.where("invoiceNumber").regex(searchItems),
+//							Criteria.where("status").regex(searchItems),
+//							Criteria.where("mobileNumber").regex(searchItems),
+//							Criteria.where("deliveryPlant").regex(searchItems),
+////							Criteria.where("remarks").regex(searchItems),
+//							Criteria.where("paymentType").regex(searchItems),
+//							Criteria.where("receiver").regex(searchItems),
+//							Criteria.where("claimedBy").regex(searchItems), Criteria.where("type").regex(searchItems),
+//							Criteria.where("msmeCategory").regex(searchItems)));
+//
+//			mongoTemplate.find(Query.query(criteria), Invoice.class);
+//		}
+//		return ResponseEntity.ok(invoices);
+//	}
 
-		if (searchItems == null || searchItems.isEmpty()) { // Check if searchItems is null or empty
-			invoices.addAll(invoiceRepository.findByUsername(username)); // Fetch data based on username only
-		} else {
-			Criteria criteria = new Criteria().andOperator(Criteria.where("username").is(username),
-					new Criteria().orOperator(Criteria.where("poNumber").regex(searchItems),
-							Criteria.where("deliveryTimelines").regex(searchItems),
-							Criteria.where("invoiceNumber").regex(searchItems),
-							Criteria.where("status").regex(searchItems),
-							Criteria.where("mobileNumber").regex(searchItems),
-							Criteria.where("deliveryPlant").regex(searchItems),
-//							Criteria.where("remarks").regex(searchItems),
-							Criteria.where("paymentType").regex(searchItems),
-							Criteria.where("receiver").regex(searchItems),
-							Criteria.where("claimedBy").regex(searchItems), Criteria.where("type").regex(searchItems),
-							Criteria.where("msmeCategory").regex(searchItems)));
-
-			invoices.addAll(mongoTemplate.find(Query.query(criteria), Invoice.class));
-		}
-
-		return ResponseEntity.ok(invoices);
-	}
-
+	 public Page<InvoiceDTO> convertListToPage(List<InvoiceDTO> invoiceList, int page, int size) {
+	        Pageable pageable = PageRequest.of(page, size);
+	        int start = Math.min((int) pageable.getOffset(), invoiceList.size());
+	        int end = Math.min((start + pageable.getPageSize()), invoiceList.size());
+	        List<InvoiceDTO> subList = invoiceList.subList(start, end);
+	        return new PageImpl<>(subList, pageable, invoiceList.size());
+	    }
+	 
 	@GetMapping("getDash")
 	public ResponseEntity<Map<String, Object>> getInvoicesByUsername11(
-			@RequestParam(value = "username") String username) {
-		List<Invoice> invoices = invoiceRepository.findByUsername(username);
+			@RequestParam(value = "username") String username,
+			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
+			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+		Pageable pageable = PageRequest.of(page, size);
+		Page<InvoiceDTO> invoices = invoiceRepository.findByUsername(username,pageable);
 		if (invoices.isEmpty()) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No invoices found");
 		}
@@ -371,13 +408,12 @@ public class POController {
 				.count();
 		long pendingCount = invoices.stream().filter(invoice -> "pending".equalsIgnoreCase(invoice.getStatus()))
 				.count();
-
 		long rejectedCount = invoices.stream().filter(invoice -> "rejected".equalsIgnoreCase(invoice.getStatus()))
 				.count();
 
 		Map<String, Object> response = new HashMap<>();
 
-		long totalCount = invoices.size(); // Use the size of the filtered list
+		long totalCount = invoices.getTotalElements(); // Use the size of the filtered list
 		response.put("totalCount", totalCount);
 
 		Map<String, Long> statusCounts = new HashMap<>();
@@ -423,33 +459,35 @@ public class POController {
 
 	@GetMapping("getDashboard")
 	public ResponseEntity<Map<String, Object>> getInvoicesByUsername(
-			@RequestParam(value = "username") String username) {
-		List<Invoice> invoices = invoiceRepository.findByUsername(username);
+			@RequestParam(value = "username") String username,
+			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
+			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+		Pageable pageable = PageRequest.of(page, size);
+		Page<InvoiceDTO> invoices = invoiceRepository.findByUsername(username,pageable);
 		if (invoices.isEmpty()) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No invoices found");
 		}
 
-		int numInvoices = invoices.size();
-		int inprogressInvoices = invoices.size(); // This seems to be a placeholder; adjust logic if needed.
+		long numInvoices = invoices.getTotalElements();
+		long inprogressInvoices = invoices.getTotalElements(); // This seems to be a placeholder; adjust logic if needed.
 
 		Map<String, Object> response = new HashMap<>();
 		response.put("numInvoices", numInvoices);
 		response.put("inprogressInvoices", inprogressInvoices);
 
 		List<Map<String, Object>> modifiedInvoices = new ArrayList<>();
-		for (Invoice invoice : invoices) {
+		for (InvoiceDTO invoice : invoices) {
 			Map<String, Object> modifiedInvoice = new HashMap<>();
-			modifiedInvoice.put("id", invoice.getId()); // Add the MongoDB object ID
+			modifiedInvoice.put("invoiceNumber", invoice.getInvoiceNumber()); // Add the MongoDB object ID
 			modifiedInvoice.put("deliveryPlant", invoice.getDeliveryPlant());
-			modifiedInvoice.put("remarks", invoice.getRemarks());
+//			modifiedInvoice.put("remarks", invoice.getRemarks());
 			modifiedInvoice.put("poNumber", invoice.getPoNumber());
 			modifiedInvoice.put("status", invoice.getStatus());
-			modifiedInvoice.put("validityDate", invoice.getValidityDate());
-			System.out.println("Invoice ID: " + invoice.getId());
+			modifiedInvoice.put("invoiceDate", invoice.getInvoicedate());
+			System.out.println("Invoice ID: " + invoice.getInvoiceNumber());
 			System.out.println("Status: " + invoice.getStatus());
-			System.out.println("Validity Date: " + invoice.getValidityDate());
+			System.out.println("InvoiceDate: " + invoice.getInvoicedate());
 			modifiedInvoices.add(modifiedInvoice);
-
 		}
 
 		response.put("invoices", modifiedInvoices);
@@ -471,51 +509,58 @@ public class POController {
 	}
 
 	@GetMapping("/getInboxData")
-	public ResponseEntity<List<Invoice>> getAllInvoices(@RequestHeader("roleName") String roleName) {
-
-		List<Invoice> invoiceList;
+	public ResponseEntity<Page<InvoiceDTO>> getAllInvoices(@RequestHeader("roleName") String roleName,
+			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
+			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+		Pageable pageable = PageRequest.of(page, size);
+		Page<InvoiceDTO> invoicedtopage;
 
 		if ("admin".equals(roleName) || "admin2".equals(roleName)) {
-			invoiceList = invoiceRepository.findByRoleNameAndTypeAndClaimed(roleName, "material", false);
+			return ResponseEntity.ok(invoiceRepository.findByRoleNameAndTypeAndClaimed(roleName, "material", false,pageable));
 		} else {
 			// For other roles, filter by roleName only
-			invoiceList = invoiceRepository.findByRoleName(roleName);
+			invoicedtopage = invoiceRepository.findByRoleName(roleName,pageable);
 		}
 
-		if (!invoiceList.isEmpty()) {
-			return ResponseEntity.status(HttpStatus.OK).body(invoiceList);
+		if (!invoicedtopage.isEmpty()) {
+			return ResponseEntity.status(HttpStatus.OK).body(invoicedtopage);
 		} else {
-			return ResponseEntity.status(HttpStatus.OK).body(new ArrayList<>());
+			return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
 		}
 	}
 
 	@GetMapping("/InboxData")
-	public ResponseEntity<List<Invoice>> getInvoicesByUsernameAndStatus(@RequestParam("username") String username) {
+	public ResponseEntity<Page<InvoiceDTO>> getInvoicesByUsernameAndStatus(@RequestParam("username") String username,
+			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
+			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+		Pageable pageable = PageRequest.of(page, size);
 
 		// Retrieve invoices with status "reverted"
-		List<Invoice> invoiceList = invoiceRepository.findByUsernameAndStatus(username, "reverted");
+		Page<InvoiceDTO> invoiceList = invoiceRepository.findByUsernameAndStatus(username, "reverted",pageable);
 
 		if (!invoiceList.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.OK).body(invoiceList);
 		} else {
-			return ResponseEntity.status(HttpStatus.OK).body(new ArrayList<>());
+			return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
 		}
 	}
 
 	@GetMapping("/getClaimedInbox")
-	public ResponseEntity<List<Invoice>> getAllInvoices(@RequestHeader(required = false) Boolean claimed,
-			@RequestHeader("claimedBy") String claimedBy) {
+	public ResponseEntity<Page<InvoiceDTO>> getAllInvoices(@RequestHeader(required = false) Boolean claimed,
+			@RequestHeader("claimedBy") String claimedBy,
+			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
+			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+		Pageable pageable = PageRequest.of(page, size);
 
 		try {
-			List<Invoice> invoiceList = new ArrayList<>();
+			Page<InvoiceDTO> invoicedtopage= null;
 
 			if (claimed != null && claimed && claimedBy != null) {
 				// If claimed is true and claimedBy is provided, retrieve claimed invoices
-				invoiceList = invoiceRepository.findByClaimedAndClaimedBy(true, claimedBy);
+				invoicedtopage = invoiceRepository.findByClaimedAndClaimedBy(true, claimedBy,pageable);
 			}
-
 			// Always return an empty list to hide data when claimed is not true
-			return ResponseEntity.status(HttpStatus.OK).body(invoiceList);
+			return ResponseEntity.status(HttpStatus.OK).body(invoicedtopage);
 		} catch (Exception e) {
 			// Handle exceptions, log them, and return an error response
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
@@ -532,7 +577,6 @@ public class POController {
 			return ResponseEntity.notFound().build();
 		}
 		Invoice invoice = invoiceOptional.get();
-
 		// Revert the invoice to the original user and update roleName with username
 		try {
 			invoice.setStatus("reverted");
@@ -549,7 +593,6 @@ public class POController {
 			}
 
 			Invoice revertedInvoice = invoiceRepository.save(invoice);
-
 			return ResponseEntity.ok(revertedInvoice);
 		} catch (Exception e) {
 			e.printStackTrace(); // Log the exception
@@ -693,9 +736,12 @@ public class POController {
 	}
 
 	@GetMapping("/getting")
-	public ResponseEntity<List<Invoice>> getInvoicesByReceiver(@RequestParam("receiver") String receiver) {
+	public ResponseEntity<Page<InvoiceDTO>> getInvoicesByReceiver(@RequestParam("receiver") String receiver,
+			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
+			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+		Pageable pageable = PageRequest.of(page, size);
 		// Retrieve invoices with the given receiver username
-		List<Invoice> invoices = invoiceRepository.findByReceiver(receiver);
+		Page<InvoiceDTO> invoices = invoiceRepository.findByReceiver(receiver,pageable);
 
 		if (invoices.isEmpty()) {
 			return ResponseEntity.noContent().build();
@@ -763,17 +809,19 @@ public class POController {
 	}
 
 	@GetMapping("getInvoiceCount")
-	public ResponseEntity<Map<String, Integer>> getInvoiceCount(@RequestParam(value = "username") String username) {
-
-		List<Invoice> invoicesByUsername = invoiceRepository.findByUsername(username);
-		int invoiceCountByUsername = invoicesByUsername.size();
+	public ResponseEntity<Map<String, Long>> getInvoiceCount(@RequestParam(value = "username") String username,
+			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
+			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+		Pageable pageable = PageRequest.of(page, size);
+		Page<InvoiceDTO> invoicesByUsername = invoiceRepository.findByUsername(username,pageable);
+		long invoiceCountByUsername = invoicesByUsername.getTotalElements();
 
 		// Calculate inbox count based on username and status "reverted"
 		long inboxCountReverted = invoiceRepository.countByUsernameAndStatus(username, "reverted");
 
-		Map<String, Integer> response = new HashMap<>();
+		Map<String, Long> response = new HashMap<>();
 		response.put("invoiceCount", invoiceCountByUsername);
-		response.put("inboxCount", (int) inboxCountReverted);
+		response.put("inboxCount",  inboxCountReverted);
 
 		return ResponseEntity.status(HttpStatus.OK).body(response);
 	}
@@ -785,17 +833,13 @@ public class POController {
 	}
 
 	@GetMapping("poSearch")
-	public ResponseEntity<?> searchPOByPrefix(@RequestParam(value = "poNumber") String poNumber) {
+	public ResponseEntity<?> searchPOByPrefix(@RequestParam(value = "poNumber") String poNumber,
+			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
+			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+		Pageable pageable = PageRequest.of(page, size);
 
-		List<String> ans = new ArrayList<>();
-
-		List<Invoice> poList = invoiceRepository.findByPoNumberContaining(poNumber);
-
-		for (Invoice invoice : poList) {
-			ans.add(invoice.getPoNumber());
-		}
-
-		return ResponseEntity.ok(ans);
+		Page<InvoiceDTO> poList = invoiceRepository.findByPoNumberContaining(poNumber,pageable);
+		return ResponseEntity.ok(poList);
 
 	}
 
@@ -808,8 +852,11 @@ public class POController {
 	}
 
 	@GetMapping("/invoices-by-username")
-	public ResponseEntity<List<Invoice>> getInvoicesByUsername1(@RequestParam("username") String username) {
-		List<Invoice> invoices = invoiceRepository.findByUsername(username);
+	public ResponseEntity<Page<InvoiceDTO>> getInvoicesByUsername1(@RequestParam("username") String username,
+			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
+			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+		Pageable pageable = PageRequest.of(page, size);
+		Page<InvoiceDTO> invoices = invoiceRepository.findByUsername(username,pageable);
 
 		if (!invoices.isEmpty()) {
 

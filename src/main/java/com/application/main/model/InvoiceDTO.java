@@ -7,12 +7,21 @@ import org.springframework.boot.autoconfigure.data.web.SpringDataWebProperties.P
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 public class InvoiceDTO extends Pageable {
+	
 		private String poNumber;
-//		private String termAndConditions;
+		private String invoiceNumber;
+		//		private String termAndConditions;
 		private String deliveryTimelines;
 		@JsonFormat(pattern = "dd/MM/yyyy")
 		private String invoicedate;
+		private String status;
 		
+		public String getStatus() {
+			return status;
+		}
+		public void setStatus(String status) {
+			this.status = status;
+		}
 		private String claimedBy;
 		private String roleName;
 		private String deliveryPlant;
@@ -126,6 +135,13 @@ public class InvoiceDTO extends Pageable {
 			this.type = type;
 			this.msmeCategory = msmeCategory;
 			this.paymentType = paymentType;
+		}
+		
+		public String getInvoiceNumber() {
+			return invoiceNumber;
+		}
+		public void setInvoiceNumber(String invoiceNumber) {
+			this.invoiceNumber = invoiceNumber;
 		}
 		public InvoiceDTO() {
 			super();

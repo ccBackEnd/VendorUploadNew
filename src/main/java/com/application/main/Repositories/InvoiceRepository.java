@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 import com.application.main.model.Invoice;
+import com.application.main.model.InvoiceDTO;
 
 @Repository
 public interface InvoiceRepository extends MongoRepository<Invoice, String> {
@@ -16,115 +17,117 @@ public interface InvoiceRepository extends MongoRepository<Invoice, String> {
 	
 
 	Page<Invoice> findAll(Pageable pageable);
-	Invoice findBypoNumber(String poNumber);
-	
-	Optional<Invoice>findById(String id);
-
-	List<Invoice> findByUsername(String username);
-
-
-	List<Invoice> findByUsernameAndClaimedIsTrue(String username);
-
-	//List<Invoice> findByClaimedAndUsername(Boolean claimed, String username);
-
-	List<Invoice> findByClaimed(Boolean claimed);
-
-	List<Invoice> findByType(String string);
-
-//	List<Invoice> findByEicAndInvoice(String eic, boolean b);
-
-	List<Invoice> findByClaimedAndUsername(Boolean claimed, String username);
-
-//	List<Invoice> findByUsernameAndInvoice(String username, boolean b);
-
-	List<Invoice> findByClaimedAndId(Boolean claimed, String id);
-
-	List<Invoice> findByEicAndClaimed(String eic, boolean b);
-
-	List<Invoice> findAllByTypeAndEic(String type, String eic);
-
-	List<Invoice> findByUsernameAndClaimed(String username, boolean b);
-
-	List<Invoice> findByClaimedAndEic(Boolean claimed, String eic);
-
-	List<Invoice> findByEic(String eic);
-
-	List<Invoice> findAllByTypeAndEicAndClaimed(String type, String eic, boolean b);
-
-	List<Invoice> findByClaimedAndEicAndClaimedBy(Boolean claimed, String eic, String username);
+//	Invoice findBypoNumber(String poNumber);
+	Page<InvoiceDTO> findByPoNumber(String poNumber,Pageable pageable);
+	Page<InvoiceDTO> findByUsername(String username,Pageable pageable);
+	Optional<Invoice> findById(String id);
 
 
 
-	List<Invoice> findByTypeAndClaimed(String string, boolean b);
+	Page<InvoiceDTO> findByUsernameAndClaimedIsTrue(String username,Pageable pageable);
 
-	List<Invoice> findByClaimedTrue();
+	//Page<InvoiceDTO> findByClaimedAndUsername(Boolean claimed, String username);
 
-	List<Invoice> findByClaimedFalse();
+	Page<InvoiceDTO> findByClaimed(Boolean claimed, Pageable pageable);
+
+	Page<InvoiceDTO> findByType(String string, Pageable pageable);
+
+//	Page<InvoiceDTO> findByEicAndInvoice(String eic, boolean b, Pageable pageable);
+
+	Page<InvoiceDTO> findByClaimedAndUsername(Boolean claimed, String username, Pageable pageable);
+
+//	Page<InvoiceDTO> findByUsernameAndInvoice(String username, boolean b, Pageable pageable);
+
+	Page<InvoiceDTO> findByClaimedAndId(Boolean claimed, String id, Pageable pageable);
+
+	Page<InvoiceDTO> findByEicAndClaimed(String eic, boolean b, Pageable pageable);
+
+	Page<InvoiceDTO> findAllByTypeAndEic(String type, String eic, Pageable pageable);
+
+	Page<InvoiceDTO> findByUsernameAndClaimed(String username, boolean b, Pageable pageable);
+
+	Page<InvoiceDTO> findByClaimedAndEic(Boolean claimed, String eic, Pageable pageable);
+
+	Page<InvoiceDTO> findByEic(String eic, Pageable pageable);
+
+	Page<InvoiceDTO> findAllByTypeAndEicAndClaimed(String type, String eic, boolean b, Pageable pageable);
+
+	Page<InvoiceDTO> findByClaimedAndEicAndClaimedBy(Boolean claimed, String eic, String username, Pageable pageable);
+
+
+
+	Page<InvoiceDTO> findByTypeAndClaimed(String string, boolean b, Pageable pageable);
+
+	Page<InvoiceDTO> findByClaimedTrue(Pageable pageable);
+
+	Page<InvoiceDTO> findByClaimedFalse(Pageable pageable);
 
 	long countByTypeAndClaimed(String string, boolean b);
 
 	long countByTypeAndEicAndClaimed(String type, String eic, boolean b);
 
-	Optional<Invoice> findByInvoiceNumber(String invoiceNumber);
+	Page<InvoiceDTO> findByInvoiceNumber(String invoiceNumber,Pageable pageable);
 
-	List<Invoice> findByUsernameAndPoNumber(String username, String poNumber);
+	Page<InvoiceDTO> findByUsernameAndPoNumber(String username, String poNumber,Pageable pageable);
 
-	List<Invoice> findByUsernameAndInvoiceNumber(String username, String invoiceNumber);
+	Page<InvoiceDTO> findByUsernameAndInvoiceNumber(String username, String invoiceNumber,Pageable pageable);
+	
+	Page<InvoiceDTO> findByPoNumberAndInvoiceNumber(String poNumber, String invoiceNumber,Pageable pageable);
 
-	List<Invoice> findBypoNumberStartingWith(String prefix);
+	Page<InvoiceDTO> findBypoNumberStartingWith(String prefix, Pageable pageable);
 
-	//List<Invoice> findByDeliveryPlantStartingWith(String deliveryPlant);
+	//Page<InvoiceDTO> findByDeliveryPlantStartingWith(String deliveryPlant);
 
-	//List<Invoice> findBypoNumberContains(String poNumber);
+	//Page<InvoiceDTO> findBypoNumberContains(String poNumber);
 
-	List<Invoice> findBypoNumberContaining(String poNumber);
+	Page<InvoiceDTO> findBypoNumberContaining(String poNumber, Pageable pageable);
 
-	List<Invoice> findByReceiver(String receiver);
+	Page<InvoiceDTO> findByReceiver(String receiver, Pageable pageable);
 
-	List<Invoice> findAllByTypeAndEicAndClaimedAndReceiver(String type, String eic, boolean b, String receiver);
+	Page<InvoiceDTO> findAllByTypeAndEicAndClaimedAndReceiver(String type, String eic, boolean b, String receiver, Pageable pageable);
 
-	List<Invoice> findByTypeAndClaimedAndReceiver(String string, boolean b, String receiver);
+	Page<InvoiceDTO> findByTypeAndClaimedAndReceiver(String string, boolean b, String receiver, Pageable pageable);
 
-	List<Invoice> findByTypeAndClaimedOrReceiver(String string, boolean b, String eic);
+	Page<InvoiceDTO> findByTypeAndClaimedOrReceiver(String string, boolean b, String eic, Pageable pageable);
 
-	//List<Invoice> findAllByTypeAndEicAndClaimedOrReceiver(String type, String eic, boolean b, String eic2);
+	//Page<InvoiceDTO> findAllByTypeAndEicAndClaimedOrReceiver(String type, String eic, boolean b, String eic2, Pageable pageable);
 
-	//List<Invoice> findByTypeAndClaimedOrReceiverAndReceiver(String string, boolean b, String receiver);
+	//Page<InvoiceDTO> findByTypeAndClaimedOrReceiverAndReceiver(String string, boolean b, String receiver, Pageable pageable);
 
-	//List<Invoice> findAllByTypeAndEicAndClaimedOrReceiverAndReceiver(String type, String eic, boolean b,
-	//		String receiver);
+	//Page<InvoiceDTO> findAllByTypeAndEicAndClaimedOrReceiverAndReceiver(String type, String eic, boolean b,
+	//		String receiver, Pageable pageable);
 
-	List<Invoice> findByClaimedAndClaimedByOrReceiver(Boolean claimed, String claimedBy, String receiver);
+	Page<InvoiceDTO> findByClaimedAndClaimedByOrReceiver(Boolean claimed, String claimedBy, String receiver, Pageable pageable);
 
-	Invoice findByPoNumber(String poNumber);
+//	Optional<Invoice> findByPoNumber(String poNumber, Pageable pageable);
 
 	
-	List<Invoice> findByPoNumberContaining(String poNumber);
+	Page<InvoiceDTO> findByPoNumberContaining(String poNumber, Pageable pageable);
 
-	List<Invoice> findAllByTypeAndEicAndClaimedOrReceievedBy(String type, String eic, boolean b, String receievedBy);
+	Page<InvoiceDTO> findAllByTypeAndEicAndClaimedOrReceievedBy(String type, String eic, boolean b, String receievedBy, Pageable pageable);
 
-	List<Invoice> findAllByTypeAndEicAndClaimedOrReceievedByAndReceievedBy(String type, String eic, boolean b,
-			String receievedBy);
+	Page<InvoiceDTO> findAllByTypeAndEicAndClaimedOrReceievedByAndReceievedBy(String type, String eic, boolean b,
+			String receievedBy, Pageable pageable);
 
-	List<Invoice> findByTypeAndClaimedOrReceievedByAndReceievedBy(String string, boolean b, String receievedBy);
+	Page<InvoiceDTO> findByTypeAndClaimedOrReceievedByAndReceievedBy(String string, boolean b, String receievedBy, Pageable pageable);
 
-	List<Invoice> findAllByTypeAndEicAndClaimedAndReceievedBy(String type, String eic, boolean b, String receievedBy);
+	Page<InvoiceDTO> findAllByTypeAndEicAndClaimedAndReceievedBy(String type, String eic, boolean b, String receievedBy, Pageable pageable);
 
-	List<Invoice> findAllByTypeAndEicAndClaimedOrReceiver(String type, String eic, boolean b, String eic2);
+	Page<InvoiceDTO> findAllByTypeAndEicAndClaimedOrReceiver(String type, String eic, boolean b, String eic2, Pageable pageable);
 
-	List<Invoice> findByClaimedAndClaimedBy(Boolean claimed, String claimedBy);
+	Page<InvoiceDTO> findByClaimedAndClaimedBy(Boolean claimed, String claimedBy, Pageable pageable);
 
-	List<Invoice> findByRoleName(String roleName);
+	Page<InvoiceDTO> findByRoleName(String roleName, Pageable pageable);
 
-	List<Invoice> findByRoleNameAndTypeAndClaimed(String roleName, String string, boolean b);
+	Page<InvoiceDTO> findByRoleNameAndTypeAndClaimed(String roleName, String string, boolean b, Pageable pageable);
 
-	List<Invoice> findByTypeAndClaimed(String roleName, String string, boolean b);
+	Page<InvoiceDTO> findByTypeAndClaimed(String roleName, String string, boolean b, Pageable pageable);
 
 	long countByUsernameAndClaimed(String username, boolean b);
 
 	long countByUsername(String username);
 
-	List<Invoice> findByUsernameAndStatus(String username, String string);
+	Page<InvoiceDTO> findByUsernameAndStatus(String username, String string, Pageable pageable);
 
 	long countByUsernameAndStatus(String username, String string);
 	// In your InvoiceRepository interface
