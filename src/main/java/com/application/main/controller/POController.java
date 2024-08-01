@@ -101,16 +101,20 @@ public class POController {
 	}
 
 	@PostMapping("/createPO")
-	public ResponseEntity<?> createPurchaseOrder(@RequestParam(value = "poNumber") String poNumber,
-			@RequestParam(value = "description") String description,
+	public ResponseEntity<?> createPurchaseOrder(
+			@RequestParam(value = "poNumber") String poNumber,
+			@RequestParam(value = "description",required=false) String description,
 			@RequestParam(value = "poIssueDate") @DateTimeFormat(pattern = "yyyy-MM-dd") String poIssueDate,
 			@RequestParam(value = "deliveryDate") @DateTimeFormat(pattern = "yyyy-MM-dd") String deliveryDate,
-			@RequestParam(value = "poStatus") String poStatus, @RequestParam(value = "poAmount") String poAmount,
-			@RequestParam(value = "deliveryTimelines") String deliveryTimelines,
-			@RequestParam(value = "deliveryPlant") String deliveryPlant,
-			@RequestParam(value = "paymentType") String paymentType, @RequestParam(value = "eic") String eic,
-			@RequestParam(value = "receiver") String receiver, @RequestParam MultipartFile filePO) {
-		System.err.println("999999999999999999999999999999");
+			@RequestParam(value = "poStatus") String poStatus, 
+			@RequestParam(value = "poAmount") String poAmount,
+			@RequestParam(value = "deliveryTimelines",required=false) String deliveryTimelines,
+			@RequestParam(value = "deliveryPlant",required=false) String deliveryPlant,
+			@RequestParam(value = "paymentType") String paymentType, 
+			@RequestParam(value = "eic") String eic,
+			@RequestParam(value = "receiver",required=false) String receiver, 
+			@RequestParam(value = "file",required=false) MultipartFile filePO) {
+		System.err.println("Po Creation Initiated");
 
 		try {
 			DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE;
@@ -121,6 +125,7 @@ public class POController {
 					poStatus, eic, paymentType, poAmount, receiver);
 			ps.setUrl(s3service.uploadFile(filePO));
 			porepo.save(ps);
+			System.err.println("Po Creation Successfully Ended");
 		} catch (Exception e) {
 			return ResponseEntity.ok(e);
 		}
@@ -128,15 +133,17 @@ public class POController {
 	}
 
 	@PostMapping("/uploadInvoice")
-	public ResponseEntity<?> createInvoice(@RequestParam("poNumber") String poNumber,
+	public ResponseEntity<?> createInvoice(
 			@RequestParam("file") MultipartFile invoiceFile,
 			@RequestPart(name = "supportingDocument", required = false) List<MultipartFile> supportingDocument,
+			@RequestParam("poNumber") String poNumber,
 			@RequestParam(value = "roleName", required = false) String roleName,
 			@RequestParam(value = "eic", required = false) String eic,
 			@RequestParam(value = "alternateMobileNumber", required = false) String alternateMobileNumber,
 			@RequestParam(value = "alternateEmail", required = false) String alternateEmail,
 			@RequestParam(value = "remarks", required = false) Set<String> remarks,
-			@RequestParam("invoiceAmount") String invoiceAmount, @RequestParam("invoiceDate") String invoiceDate,
+			@RequestParam("invoiceAmount") String invoiceAmount, 
+			@RequestParam("invoiceDate") String invoiceDate,
 			@RequestParam("invoiceNumber") String invoiceNumber,
 			@RequestParam(name = "validityDate", required = false) String validityDate,
 			@RequestParam(name = "termAndConditions", required = false) String termAndConditions,

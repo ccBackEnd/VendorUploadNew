@@ -74,7 +74,6 @@ public class AwsService {
 			List<DocDetails> suppDocNameList, String status, String receievedBy) throws IOException {
 		
 		
-		
 		Invoice invoice = new Invoice();
 		invoice.setPoNumber(poNumber);
 		invoice.setStatus("pending");
