@@ -96,8 +96,9 @@ public class POController {
 	public LocalDate testing() {
 		return LocalDate.now();
 	}
+
 	private String getUserNameFromToken(String token) {
-		
+
 		String tokenBody = token.split("\\.")[1];
 		Base64.Decoder decoder = Base64.getUrlDecoder();
 		String payload = new String(decoder.decode(tokenBody));
@@ -111,11 +112,13 @@ public class POController {
 			ObjectMapper objectMapper = new ObjectMapper();
 			JsonNode jsonNode = objectMapper.readTree(json);
 			fieldValue = jsonNode.get(fieldName).asText();
+			System.out.println(fieldName + " : " + fieldValue);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return fieldValue;
 	}
+
 	public Page<?> convertStreamToPage(Stream<?> entityStream, int page, int size) {
 		List<?> entityList = entityStream.collect(Collectors.toList());
 		Pageable pageable = PageRequest.of(page, size);
@@ -125,39 +128,38 @@ public class POController {
 	@PostMapping("/createPO")
 	public ResponseEntity<?> createPurchaseOrder(
 			@RequestParam(value = "poNumber") String poNumber,
-			@RequestParam(value = "description",required=false) String description,
+			@RequestParam(value = "description", required = false) String description,
 			@RequestParam(value = "poIssueDate") @DateTimeFormat(pattern = "yyyy-MM-dd") String poIssueDate,
 			@RequestParam(value = "deliveryDate") @DateTimeFormat(pattern = "yyyy-MM-dd") String deliveryDate,
-			@RequestParam(value = "poStatus") String poStatus, 
 			@RequestParam(value = "poAmount") String poAmount,
-			@RequestParam(value = "deliveryTimelines",required=false) String deliveryTimelines,
-			@RequestParam(value = "deliveryPlant",required=false) String deliveryPlant,
-			@RequestParam(value = "paymentType") String paymentType, 
+			@RequestParam(value = "deliveryTimelines", required = false) String deliveryTimelines,
+			@RequestParam(value = "deliveryPlant", required = false) String deliveryPlant,
 			@RequestParam(value = "eic") String eic,
-			@RequestParam(value = "receiver",required=false) String receiver, 
-			@RequestParam(value = "filePO",required = false) MultipartFile filePO,
-			HttpServletRequest request){
+			@RequestParam(value = "receiver", required = false) String receiver,
+			@RequestParam(value = "filePO", required = false) MultipartFile filePO, HttpServletRequest request)
+			throws Exception {
+		if(porepo.existsByPoNumber(poNumber)) return ResponseEntity.ok("Po Number "+ poNumber +" Already Exists");
 		String token = request.getHeader("Authorization").replace("Bearer ", "");
-		System.err.println("Po Creation Initiated");
+		String username = getUserNameFromToken(token);
+		s3service.createBucket(token, username);
+		DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE;
+		System.out.println("Po Creation Initiated : UserName -> " + username);
 
 		try {
-			DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE;
 			LocalDate issuedt = LocalDate.parse(poIssueDate, formatter);
 			LocalDate delt = LocalDate.parse(deliveryDate, formatter);
-			String username = getUserNameFromToken(token);
 			String url = s3service.uploadFile(filePO);
-			System.err.println("---------" + username + "--------" + url);
-			PoSummary ps = new PoSummary(poNumber, description, issuedt, delt, deliveryPlant, deliveryTimelines, 0,
-					poStatus, eic, paymentType, poAmount, receiver , username,url);
-			System.err.println("----Object Created----");
-			System.err.println("---------");
+			System.err.println("PO File URL : " + url);
+			PoSummary ps = new PoSummary(poNumber, description, issuedt, delt, deliveryPlant, deliveryTimelines, 0, eic,
+					poAmount, receiver, username, url);
 			porepo.save(ps);
-			System.err.println("Po Creation Successfully Ended");
+			System.err.println("Po Creation Successfully Ended ! ");
 		} catch (Exception e) {
 			System.out.println("Exception Found");
+			e.printStackTrace();
 			return ResponseEntity.ok(e);
 		}
-		return ResponseEntity.ok("saved");
+		return ResponseEntity.ok("Po Creation Successfully Ended ! , saved" + HttpStatus.ACCEPTED);
 	}
 
 	@PostMapping("/uploadInvoice")
@@ -165,68 +167,49 @@ public class POController {
 			@RequestParam("file") MultipartFile invoiceFile,
 			@RequestPart(name = "supportingDocument", required = false) List<MultipartFile> supportingDocument,
 			@RequestParam("poNumber") String poNumber,
-			@RequestParam(value = "roleName", required = false) String roleName,
-			@RequestParam(value = "eic", required = false) String eic,
 			@RequestParam(value = "alternateMobileNumber", required = false) String alternateMobileNumber,
 			@RequestParam(value = "alternateEmail", required = false) String alternateEmail,
 			@RequestParam(value = "remarks", required = false) Set<String> remarks,
-			@RequestParam("invoiceAmount") String invoiceAmount, 
-			@RequestParam("invoiceDate") String invoiceDate,
+			@RequestParam("invoiceAmount") String invoiceAmount, @RequestParam("invoiceDate") String invoiceDate,
 			@RequestParam("invoiceNumber") String invoiceNumber,
 			@RequestParam(name = "validityDate", required = false) String validityDate,
-			@RequestParam(name = "termAndConditions", required = false) String termAndConditions,
-			@RequestParam(name = "status", required = false) String status,
 			@RequestParam(name = "deliveryTimelines", required = false) String deliveryTimelines,
 			@RequestParam(name = "deliveryPlant", required = false) String deliveryPlant,
-			@RequestParam(name = "createdBy", required = false) String createdBy,
-			@RequestParam(name = "receievedBy", required = false) String receievedBy, HttpServletRequest request)
-			throws Exception {
-
-//		if(supportingDocument.contains(invoiceFile)) return ResponseEntity.ok("InvoiceFile and Supporting Document cant be Same");
-		System.err.println("----------------------------------------------");
-		if (receievedBy == null || receievedBy.isEmpty()) {
-			receievedBy = roleName;
-		}
-		String username = "";
-		if (createdBy == null || createdBy.isEmpty()) {
-			username = request.getHeader("preferred_username");
-			createdBy = username;
-		}
-
+			@RequestParam(value = "roleName", required = false) String roleName,
+//			@RequestParam(value = "eic", required = false) String eic,
+//			@RequestParam(name = "termAndConditions", required = false) String termAndConditions,
+//			@RequestParam(name = "status", required = false) String status,
+//			@RequestParam(name = "createdBy", required = false) String createdBy,
+//			@RequestParam(name = "receievedBy", required = false) String receievedBy, 
+			HttpServletRequest request) throws Exception {
+		if(invoiceRepository.existsByInvoiceNumber(invoiceNumber)) return ResponseEntity.ok("Invoice with Number "+ invoiceNumber +" Already Exists"); 
+		String receievedBy = roleName;
 		String token = request.getHeader("Authorization").replace("Bearer ", "");
-		System.err.println(token);
-		s3service.createBucket(token);
+		String username = getUserNameFromToken(token);
+		s3service.createBucket(token, username);
 
-		List<String> invoiceFileUrlList = new ArrayList<>();
-		String url = s3service.uploadFile(invoiceFile);
-		DocDetails invoicedetails = new DocDetails(invoiceFile.getOriginalFilename(), url);
-		invoiceFileUrlList.add(url);
-		// ----------------------------------
+		String invoiceURL = s3service.uploadFile(invoiceFile);
+		DocDetails invoicedetails = new DocDetails(invoiceFile.getOriginalFilename(), invoiceURL);
 		List<DocDetails> suppDocNameList = new ArrayList<>();
-		List<String> supportingDocumentUrls = new ArrayList<>();
 
 		if (supportingDocument != null) {
 			supportingDocument.forEach(document -> {
 				try {
 					String documentUrl = s3service.uploadFile(document);
-					supportingDocumentUrls.add(documentUrl);
 					suppDocNameList.add(new DocDetails(document.getOriginalFilename(), documentUrl));
 				} catch (IOException e) {
-					// Handle the exception, e.g., log it or rethrow it
+					System.out.println("Supporting docs exception");
 					e.printStackTrace();
-					// Optionally, you can handle the exception differently based on your
-					// application's needs
 				}
 			});
 		}
 
 		System.out.println("receievedBy: " + receievedBy);
-		System.out.println("createdBy" + createdBy);
-
-		Map<String, Object> uploadMongoFile = s3service.uploadMongoFile(invoiceFileUrlList, supportingDocumentUrls, eic,
-				roleName, poNumber, token, alternateMobileNumber, alternateEmail, remarks, invoiceAmount, invoiceDate,
-				invoiceNumber, username, createdBy, deliveryPlant, invoicedetails, suppDocNameList, status,
-				receievedBy);
+		System.out.println("createdBy: " + username);
+		String eic = porepo.findByPoNumber(poNumber).get().getEic();
+		Map<String, Object> uploadMongoFile = s3service.uploadMongoFile(eic, roleName, poNumber, token,
+				alternateMobileNumber, alternateEmail, remarks, invoiceAmount, invoiceDate, invoiceNumber, username,
+				username, deliveryPlant, invoicedetails, suppDocNameList, "Paid" ,receievedBy);
 		if (uploadMongoFile == null)
 			return ResponseEntity.ok(HttpStatus.METHOD_FAILURE);
 		return ResponseEntity.ok(uploadMongoFile);
@@ -239,8 +222,8 @@ public class POController {
 			return ResponseEntity.ok(HttpStatus.NOT_FOUND);
 		PoDTO podto = new PoDTO(po.get().getPoNumber(), po.get().getDescription(), po.get().getPoIssueDate(),
 				po.get().getDeliveryDate(), po.get().getPoStatus(), po.get().getPoAmount(), po.get().getNoOfInvoices(),
-				po.get().getDeliveryTimelines(), po.get().getDeliveryPlant(), po.get().getPaymentType(),
-				po.get().getEic(), po.get().getReceiver());
+				po.get().getDeliveryTimelines(), po.get().getDeliveryPlant(), po.get().getEic(),
+				po.get().getReceiver());
 		return ResponseEntity.ok(podto);
 
 	}
@@ -250,13 +233,15 @@ public class POController {
 		List<String> roles = Arrays.asList("HR", "Finance", "Admin", "Admin2");
 		return roles;
 	}
-	
+
 	@GetMapping("/poSummary/getSummary")
-	public ResponseEntity<?> getPobyUsername(@RequestParam(value = "username",required=false) String username){
-		Optional<List<PoSummary>> polist =  porepo.findByUsername(username);
-		if(polist.isEmpty()) throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, "NO PO FOUND!", null);
+	public ResponseEntity<?> getPobyUsername(@RequestParam(value = "username", required = false) String username) {
+		Optional<List<PoSummary>> polist = porepo.findByUsername(username);
+		if (polist.isEmpty())
+			throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, "NO PO FOUND!", null);
 		return ResponseEntity.ok(polist.get());
 	}
+
 	@GetMapping("/getAllPo")
 	public Page<PoDTO> getAllPo(@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "10") int size) {
@@ -266,7 +251,7 @@ public class POController {
 
 		return poPage.map(po -> new PoDTO(po.getPoNumber(), po.getDescription(), po.getPoIssueDate(),
 				po.getDeliveryDate(), po.getPoStatus(), po.getPoAmount(), po.getNoOfInvoices(),
-				po.getDeliveryTimelines(), po.getDeliveryPlant(), po.getPaymentType(), po.getEic(), po.getReceiver()));
+				po.getDeliveryTimelines(), po.getDeliveryPlant(), po.getEic(), po.getReceiver()));
 	}
 
 	@GetMapping("/getAllInvoices")
@@ -424,21 +409,21 @@ public class POController {
 //		return ResponseEntity.ok(invoices);
 //	}
 
-	 public Page<InvoiceDTO> convertListToPage(List<InvoiceDTO> invoiceList, int page, int size) {
-	        Pageable pageable = PageRequest.of(page, size);
-	        int start = Math.min((int) pageable.getOffset(), invoiceList.size());
-	        int end = Math.min((start + pageable.getPageSize()), invoiceList.size());
-	        List<InvoiceDTO> subList = invoiceList.subList(start, end);
-	        return new PageImpl<>(subList, pageable, invoiceList.size());
-	    }
-	 
+	public Page<InvoiceDTO> convertListToPage(List<InvoiceDTO> invoiceList, int page, int size) {
+		Pageable pageable = PageRequest.of(page, size);
+		int start = Math.min((int) pageable.getOffset(), invoiceList.size());
+		int end = Math.min((start + pageable.getPageSize()), invoiceList.size());
+		List<InvoiceDTO> subList = invoiceList.subList(start, end);
+		return new PageImpl<>(subList, pageable, invoiceList.size());
+	}
+
 	@GetMapping("getDash")
 	public ResponseEntity<Map<String, Object>> getInvoicesByUsername11(
 			@RequestParam(value = "username") String username,
 			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
 			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
 		Pageable pageable = PageRequest.of(page, size);
-		Page<InvoiceDTO> invoices = invoiceRepository.findByUsername(username,pageable);
+		Page<InvoiceDTO> invoices = invoiceRepository.findByUsername(username, pageable);
 		if (invoices.isEmpty()) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No invoices found");
 		}
@@ -499,18 +484,18 @@ public class POController {
 	}
 
 	@GetMapping("getDashboard")
-	public ResponseEntity<Map<String, Object>> getInvoicesByUsername(
-			@RequestParam(value = "username") String username,
+	public ResponseEntity<Map<String, Object>> getInvoicesByUsername(@RequestParam(value = "username") String username,
 			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
 			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
 		Pageable pageable = PageRequest.of(page, size);
-		Page<InvoiceDTO> invoices = invoiceRepository.findByUsername(username,pageable);
+		Page<InvoiceDTO> invoices = invoiceRepository.findByUsername(username, pageable);
 		if (invoices.isEmpty()) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No invoices found");
 		}
 
 		long numInvoices = invoices.getTotalElements();
-		long inprogressInvoices = invoices.getTotalElements(); // This seems to be a placeholder; adjust logic if needed.
+		long inprogressInvoices = invoices.getTotalElements(); // This seems to be a placeholder; adjust logic if
+																// needed.
 
 		Map<String, Object> response = new HashMap<>();
 		response.put("numInvoices", numInvoices);
@@ -557,10 +542,11 @@ public class POController {
 		Page<InvoiceDTO> invoicedtopage;
 
 		if ("admin".equals(roleName) || "admin2".equals(roleName)) {
-			return ResponseEntity.ok(invoiceRepository.findByRoleNameAndTypeAndClaimed(roleName, "material", false,pageable));
+			return ResponseEntity
+					.ok(invoiceRepository.findByRoleNameAndTypeAndClaimed(roleName, "material", false, pageable));
 		} else {
 			// For other roles, filter by roleName only
-			invoicedtopage = invoiceRepository.findByRoleName(roleName,pageable);
+			invoicedtopage = invoiceRepository.findByRoleName(roleName, pageable);
 		}
 
 		if (!invoicedtopage.isEmpty()) {
@@ -577,7 +563,7 @@ public class POController {
 		Pageable pageable = PageRequest.of(page, size);
 
 		// Retrieve invoices with status "reverted"
-		Page<InvoiceDTO> invoiceList = invoiceRepository.findByUsernameAndStatus(username, "reverted",pageable);
+		Page<InvoiceDTO> invoiceList = invoiceRepository.findByUsernameAndStatus(username, "reverted", pageable);
 
 		if (!invoiceList.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.OK).body(invoiceList);
@@ -594,11 +580,11 @@ public class POController {
 		Pageable pageable = PageRequest.of(page, size);
 
 		try {
-			Page<InvoiceDTO> invoicedtopage= null;
+			Page<InvoiceDTO> invoicedtopage = null;
 
 			if (claimed != null && claimed && claimedBy != null) {
 				// If claimed is true and claimedBy is provided, retrieve claimed invoices
-				invoicedtopage = invoiceRepository.findByClaimedAndClaimedBy(true, claimedBy,pageable);
+				invoicedtopage = invoiceRepository.findByClaimedAndClaimedBy(true, claimedBy, pageable);
 			}
 			// Always return an empty list to hide data when claimed is not true
 			return ResponseEntity.status(HttpStatus.OK).body(invoicedtopage);
@@ -782,7 +768,7 @@ public class POController {
 			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
 		Pageable pageable = PageRequest.of(page, size);
 		// Retrieve invoices with the given receiver username
-		Page<InvoiceDTO> invoices = invoiceRepository.findByReceiver(receiver,pageable);
+		Page<InvoiceDTO> invoices = invoiceRepository.findByReceiver(receiver, pageable);
 
 		if (invoices.isEmpty()) {
 			return ResponseEntity.noContent().build();
@@ -854,7 +840,7 @@ public class POController {
 			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
 			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
 		Pageable pageable = PageRequest.of(page, size);
-		Page<InvoiceDTO> invoicesByUsername = invoiceRepository.findByUsername(username,pageable);
+		Page<InvoiceDTO> invoicesByUsername = invoiceRepository.findByUsername(username, pageable);
 		long invoiceCountByUsername = invoicesByUsername.getTotalElements();
 
 		// Calculate inbox count based on username and status "reverted"
@@ -862,7 +848,7 @@ public class POController {
 
 		Map<String, Long> response = new HashMap<>();
 		response.put("invoiceCount", invoiceCountByUsername);
-		response.put("inboxCount",  inboxCountReverted);
+		response.put("inboxCount", inboxCountReverted);
 
 		return ResponseEntity.status(HttpStatus.OK).body(response);
 	}
@@ -879,7 +865,7 @@ public class POController {
 			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
 		Pageable pageable = PageRequest.of(page, size);
 
-		Page<InvoiceDTO> poList = invoiceRepository.findByPoNumberContaining(poNumber,pageable);
+		Page<InvoiceDTO> poList = invoiceRepository.findByPoNumberContaining(poNumber, pageable);
 		return ResponseEntity.ok(poList);
 
 	}
@@ -897,7 +883,7 @@ public class POController {
 			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
 			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
 		Pageable pageable = PageRequest.of(page, size);
-		Page<InvoiceDTO> invoices = invoiceRepository.findByUsername(username,pageable);
+		Page<InvoiceDTO> invoices = invoiceRepository.findByUsername(username, pageable);
 
 		if (!invoices.isEmpty()) {
 

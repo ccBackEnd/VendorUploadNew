@@ -17,6 +17,7 @@ public interface InvoiceRepository extends MongoRepository<Invoice, String> {
 	
 
 	Page<Invoice> findAll(Pageable pageable);
+	Boolean existsByInvoiceNumber(String invoicenumber);
 //	Invoice findBypoNumber(String poNumber);
 	Page<InvoiceDTO> findByPoNumber(String poNumber,Pageable pageable);
 	Page<InvoiceDTO> findByUsername(String username,Pageable pageable);

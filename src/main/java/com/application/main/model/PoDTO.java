@@ -22,7 +22,6 @@ public class PoDTO {
 	private int noOfInvoices;
 	private String deliveryTimelines;
 	private String deliveryPlant;
-	private String paymentType;
 	private String eic;
 	private String receiver;
 
@@ -106,14 +105,6 @@ public class PoDTO {
 		this.deliveryPlant = deliveryPlant;
 	}
 
-	public String getPaymentType() {
-		return paymentType;
-	}
-
-	public void setPaymentType(String paymentType) {
-		this.paymentType = paymentType;
-	}
-
 	public String getEic() {
 		return eic;
 	}
@@ -131,19 +122,19 @@ public class PoDTO {
 	}
 
 	public PoDTO(String poNumber, String description, LocalDate poIssueDate, LocalDate deliveryDate, String poStatus,
-			String poAmount, int noOfInvoices, String deliveryTimelines, String deliveryPlant, String paymentType,
+			String poAmount, int noOfInvoices, String deliveryTimelines, String deliveryPlant,
 			String eic, String receiver) {
 		super();
 		this.poNumber = poNumber;
 		this.description = description;
 		this.poIssueDate = poIssueDate.toString();
 		this.deliveryDate = deliveryDate.toString();
-		this.poStatus = poStatus;
+		if(poStatus.contains("Pending")) this.poStatus = "Pending" ;
+		else this.poStatus = "Completed";
 		this.poAmount = poAmount;
 		this.noOfInvoices = noOfInvoices;
 		this.deliveryTimelines = deliveryTimelines;
 		this.deliveryPlant = deliveryPlant;
-		this.paymentType = paymentType;
 		this.eic = eic;
 		this.receiver = receiver;
 	}

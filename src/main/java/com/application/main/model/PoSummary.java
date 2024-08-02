@@ -25,7 +25,6 @@ public class PoSummary {
 	private int noOfInvoices;
 	private String deliveryTimelines;
 	private String deliveryPlant;
-	private String paymentType;
 	private String eic;
 	private String receiver;
 	// private List<String> supportingDocument;
@@ -119,14 +118,6 @@ public class PoSummary {
 		this.username = username;
 	}
 
-	public String getPaymentType() {
-		return paymentType;
-	}
-
-	public void setPaymentType(String paymentType) {
-		this.paymentType = paymentType;
-	}
-
 	public String getReceiver() {
 		return receiver;
 	}
@@ -209,19 +200,18 @@ public class PoSummary {
 	}
 
 	public PoSummary(String poNumber, String description, LocalDate poIssueDate, LocalDate deliveryDate,
-			String deliveryPlant, String deliveryTimelines, int noOfInvoices, String poStatus, String eic,
-			String paymentType, String poAmount, String receiver, String username, String url) {
+			String deliveryPlant, String deliveryTimelines, int noOfInvoices, String eic,
+			 String poAmount, String receiver, String username, String url) {
 		// TODO Auto-generated constructor stub
 		this.poNumber = poNumber;
 		this.description = description;
 		this.poIssueDate = poIssueDate;
 		this.deliveryDate = deliveryDate;
-		this.poStatus = poStatus;
+		this.poStatus = "New Purchase Order : Pending Status";
 		this.poAmount = poAmount;
 		this.noOfInvoices = noOfInvoices;
 		this.deliveryTimelines = deliveryTimelines;
 		this.deliveryPlant = deliveryPlant;
-		this.paymentType = paymentType;
 		this.eic = eic;
 		this.receiver = receiver;
 		this.url = url;
