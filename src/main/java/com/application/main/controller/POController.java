@@ -23,6 +23,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -126,8 +128,7 @@ public class POController {
 	}
 
 	@PostMapping("/createPO")
-	public ResponseEntity<?> createPurchaseOrder(
-			@RequestParam(value = "poNumber") String poNumber,
+	public ResponseEntity<?> createPurchaseOrder(@RequestParam(value = "poNumber") String poNumber,
 			@RequestParam(value = "description", required = false) String description,
 			@RequestParam(value = "poIssueDate") @DateTimeFormat(pattern = "yyyy-MM-dd") String poIssueDate,
 			@RequestParam(value = "deliveryDate") @DateTimeFormat(pattern = "yyyy-MM-dd") String deliveryDate,
@@ -138,7 +139,8 @@ public class POController {
 			@RequestParam(value = "receiver", required = false) String receiver,
 			@RequestParam(value = "filePO", required = false) MultipartFile filePO, HttpServletRequest request)
 			throws Exception {
-		if(porepo.existsByPoNumber(poNumber)) return ResponseEntity.ok("Po Number "+ poNumber +" Already Exists");
+		if (porepo.existsByPoNumber(poNumber))
+			return ResponseEntity.ok("Po Number " + poNumber + " Already Exists");
 		String token = request.getHeader("Authorization").replace("Bearer ", "");
 		String username = getUserNameFromToken(token);
 		s3service.createBucket(token, username);
@@ -163,8 +165,7 @@ public class POController {
 	}
 
 	@PostMapping("/uploadInvoice")
-	public ResponseEntity<?> createInvoice(
-			@RequestParam("file") MultipartFile invoiceFile,
+	public ResponseEntity<?> createInvoice(@RequestParam("file") MultipartFile invoiceFile,
 			@RequestPart(name = "supportingDocument", required = false) List<MultipartFile> supportingDocument,
 			@RequestParam("poNumber") String poNumber,
 			@RequestParam(value = "alternateMobileNumber", required = false) String alternateMobileNumber,
@@ -182,7 +183,8 @@ public class POController {
 //			@RequestParam(name = "createdBy", required = false) String createdBy,
 //			@RequestParam(name = "receievedBy", required = false) String receievedBy, 
 			HttpServletRequest request) throws Exception {
-		if(invoiceRepository.existsByInvoiceNumber(invoiceNumber)) return ResponseEntity.ok("Invoice with Number "+ invoiceNumber +" Already Exists"); 
+		if (invoiceRepository.existsByInvoiceNumber(invoiceNumber))
+			return ResponseEntity.ok("Invoice with Number " + invoiceNumber + " Already Exists");
 		String receievedBy = roleName;
 		String token = request.getHeader("Authorization").replace("Bearer ", "");
 		String username = getUserNameFromToken(token);
@@ -209,7 +211,7 @@ public class POController {
 		String eic = porepo.findByPoNumber(poNumber).get().getEic();
 		Map<String, Object> uploadMongoFile = s3service.uploadMongoFile(eic, roleName, poNumber, token,
 				alternateMobileNumber, alternateEmail, remarks, invoiceAmount, invoiceDate, invoiceNumber, username,
-				username, deliveryPlant, invoicedetails, suppDocNameList, "Paid" ,receievedBy);
+				username, deliveryPlant, invoicedetails, suppDocNameList, "Paid", receievedBy);
 		if (uploadMongoFile == null)
 			return ResponseEntity.ok(HttpStatus.METHOD_FAILURE);
 		return ResponseEntity.ok(uploadMongoFile);
@@ -217,6 +219,7 @@ public class POController {
 
 	@GetMapping("/GetPo")
 	public ResponseEntity<?> getPurchaseOrder(@RequestParam String ponumber) {
+		System.out.println("Getting Purchase Order");
 		Optional<PoSummary> po = porepo.findByPoNumber(ponumber);
 		if (po == null)
 			return ResponseEntity.ok(HttpStatus.NOT_FOUND);
@@ -245,8 +248,8 @@ public class POController {
 	@GetMapping("/getAllPo")
 	public Page<PoDTO> getAllPo(@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "10") int size) {
+		System.out.println(page + " " + size);
 		Pageable pageable = PageRequest.of(page, size, Sort.by("poIssueDate").descending());
-
 		Page<PoSummary> poPage = porepo.findAll(pageable);
 
 		return poPage.map(po -> new PoDTO(po.getPoNumber(), po.getDescription(), po.getPoIssueDate(),
