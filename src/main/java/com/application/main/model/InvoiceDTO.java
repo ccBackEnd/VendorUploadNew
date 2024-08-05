@@ -3,12 +3,14 @@ package com.application.main.model;
 import java.time.LocalDate;
 
 import org.springframework.boot.autoconfigure.data.web.SpringDataWebProperties.Pageable;
+import org.springframework.data.annotation.Id;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 public class InvoiceDTO extends Pageable {
 	
-		
+	@Id
+	private String id;
 		public String getStatus() {
 			return status;
 		}
@@ -29,6 +31,12 @@ public class InvoiceDTO extends Pageable {
 	    private String invoiceAmount;
 	    
 	    
+		public String getId() {
+			return id;
+		}
+		public void setId(String id) {
+			this.id = id;
+		}
 		public String getInvoiceDate() {
 			return invoiceDate;
 		}
@@ -85,10 +93,11 @@ public class InvoiceDTO extends Pageable {
 			this.paymentType = paymentType;
 		}
 		
-		public InvoiceDTO(String poNumber, String deliveryTimelines, LocalDate invoicedate,
+		public InvoiceDTO(String id, String poNumber, String deliveryTimelines, LocalDate invoicedate,
 				String invoiceAmount ,
 				 String deliveryPlant, String mobileNumber, String eic, String paymentType) {
 			super();
+			this.id=id;
 			this.poNumber = poNumber;
 			this.deliveryTimelines = deliveryTimelines;
 			this.invoiceDate = invoicedate.toString();

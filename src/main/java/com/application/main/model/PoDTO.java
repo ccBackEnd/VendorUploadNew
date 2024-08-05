@@ -121,10 +121,11 @@ public class PoDTO {
 		this.receiver = receiver;
 	}
 
-	public PoDTO(String poNumber, String description, LocalDate poIssueDate, LocalDate deliveryDate, String poStatus,
+	public PoDTO(String id , String poNumber, String description, LocalDate poIssueDate, LocalDate deliveryDate, String poStatus,
 			String poAmount, int noOfInvoices, String deliveryTimelines, String deliveryPlant,
 			String eic, String receiver) {
 		super();
+		this.id = id;
 		this.poNumber = poNumber;
 		this.description = description;
 		this.poIssueDate = poIssueDate.toString();

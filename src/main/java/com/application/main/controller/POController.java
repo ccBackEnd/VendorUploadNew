@@ -231,7 +231,7 @@ public class POController {
 		Optional<PoSummary> po = porepo.findByPoNumber(ponumber);
 		if (po == null)
 			return ResponseEntity.ok(HttpStatus.NOT_FOUND);
-		PoDTO podto = new PoDTO(po.get().getPoNumber(), po.get().getDescription(), po.get().getPoIssueDate(),
+		PoDTO podto = new PoDTO(po.get().getId() ,po.get().getPoNumber(), po.get().getDescription(), po.get().getPoIssueDate(),
 				po.get().getDeliveryDate(), po.get().getPoStatus(), po.get().getPoAmount(), po.get().getNoOfInvoices(),
 				po.get().getDeliveryTimelines(), po.get().getDeliveryPlant(), po.get().getEic(),
 				po.get().getReceiver());
@@ -255,7 +255,7 @@ public class POController {
 		
 		if (polist.isEmpty())
 			throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, "NO PO FOUND!", null);
-		return polist.get().map(po -> new PoDTO(po.getPoNumber(), po.getDescription(), po.getPoIssueDate(),
+		return polist.get().map(po -> new PoDTO(po.getId() , po.getPoNumber(), po.getDescription(), po.getPoIssueDate(),
 				po.getDeliveryDate(), po.getPoStatus(), po.getPoAmount(), po.getNoOfInvoices(),
 				po.getDeliveryTimelines(), po.getDeliveryPlant(), po.getEic(), po.getReceiver()));
 	}
@@ -267,7 +267,7 @@ public class POController {
 		Pageable pageable = PageRequest.of(page, size, Sort.by("poIssueDate").descending());
 		Page<PoSummary> poPage = porepo.findAll(pageable);
 
-		return poPage.map(po -> new PoDTO(po.getPoNumber(), po.getDescription(), po.getPoIssueDate(),
+		return poPage.map(po -> new PoDTO(po.getId() ,po.getPoNumber(), po.getDescription(), po.getPoIssueDate(),
 				po.getDeliveryDate(), po.getPoStatus(), po.getPoAmount(), po.getNoOfInvoices(),
 				po.getDeliveryTimelines(), po.getDeliveryPlant(), po.getEic(), po.getReceiver()));
 	}
@@ -279,7 +279,7 @@ public class POController {
 
 		Page<Invoice> invoicepage = invoiceRepository.findAll(pageable);
 		Page<InvoiceDTO> invoicedtopage = invoicepage
-				.map(po -> new InvoiceDTO(po.getPoNumber(), po.getDeliveryTimelines(), po.getInvoiceDate(),po.getInvoiceAmount(),
+				.map(po -> new InvoiceDTO(po.getId(), po.getPoNumber(), po.getDeliveryTimelines(), po.getInvoiceDate(),po.getInvoiceAmount(),
 						 po.getDeliveryPlant(), po.getMobileNumber(), po.getEic(), po.getPaymentType()));
 		return ResponseEntity.ok(invoicedtopage);
 	}
@@ -430,7 +430,7 @@ public class POController {
 		invoicepage = convertListToPage(invoices, page, size);
 		
 		invoicedtopage = invoicepage
-				.map(po -> new InvoiceDTO(po.getPoNumber(), po.getDeliveryTimelines(), po.getInvoiceDate(),po.getInvoiceAmount(),
+				.map(po -> new InvoiceDTO(po.getId() , po.getPoNumber(), po.getDeliveryTimelines(), po.getInvoiceDate(),po.getInvoiceAmount(),
 						 po.getDeliveryPlant(), po.getMobileNumber(), po.getEic(), po.getPaymentType()));
 		invoicedtopage.forEach(System.out::println);
 		return ResponseEntity.ok(invoicedtopage);
