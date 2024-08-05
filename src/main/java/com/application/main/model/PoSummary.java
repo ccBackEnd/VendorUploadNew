@@ -32,6 +32,15 @@ public class PoSummary {
 	private String username;
 	private String type;
 	private String url;
+	private DocDetails doc;
+	
+	public DocDetails getDoc() {
+		return doc;
+	}
+
+	public void setDoc(DocDetails doc) {
+		this.doc = doc;
+	}
 
 	LocalDateTime currentDateTime;
 	private String invoiceNumber;

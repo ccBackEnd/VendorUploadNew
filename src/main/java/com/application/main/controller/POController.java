@@ -31,6 +31,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -72,6 +73,8 @@ public class POController {
 
 	@Autowired
 	UserRepository userRepository;
+	
+	
 
 	@GetMapping("/version")
 	public String version() {
@@ -151,9 +154,14 @@ public class POController {
 			LocalDate issuedt = LocalDate.parse(poIssueDate, formatter);
 			LocalDate delt = LocalDate.parse(deliveryDate, formatter);
 			String url = s3service.uploadFile(filePO);
+			DocDetails doc = new DocDetails(filePO.getOriginalFilename(), poNumber, url);
+			
+//			backupfilerepo.save(new BackupfileUrls(poNumber , ))
+			
 			System.err.println("PO File URL : " + url);
 			PoSummary ps = new PoSummary(poNumber, description, issuedt, delt, deliveryPlant, deliveryTimelines, 0, eic,
 					poAmount, receiver, username, url);
+			ps.setDoc(doc);
 			porepo.save(ps);
 			System.err.println("Po Creation Successfully Ended ! ");
 		} catch (Exception e) {
@@ -191,14 +199,14 @@ public class POController {
 		s3service.createBucket(token, username);
 
 		String invoiceURL = s3service.uploadFile(invoiceFile);
-		DocDetails invoicedetails = new DocDetails(invoiceFile.getOriginalFilename(), invoiceURL);
+		DocDetails invoicedetails = new DocDetails(invoiceFile.getOriginalFilename(),invoiceNumber, invoiceURL);
 		List<DocDetails> suppDocNameList = new ArrayList<>();
 
 		if (supportingDocument != null) {
 			supportingDocument.forEach(document -> {
 				try {
 					String documentUrl = s3service.uploadFile(document);
-					suppDocNameList.add(new DocDetails(document.getOriginalFilename(), documentUrl));
+					suppDocNameList.add(new DocDetails(document.getOriginalFilename(),invoiceNumber, documentUrl));
 				} catch (IOException e) {
 					System.out.println("Supporting docs exception");
 					e.printStackTrace();
@@ -238,11 +246,18 @@ public class POController {
 	}
 
 	@GetMapping("/poSummary/getSummary")
-	public ResponseEntity<?> getPobyUsername(@RequestParam(value = "username", required = false) String username) {
-		Optional<List<PoSummary>> polist = porepo.findByUsername(username);
+	public Page<PoDTO> getPobyUsername(@RequestParam(value = "username", required = false) String username,
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "10") int size
+			) {
+		Pageable pageable = PageRequest.of(page, size);
+		Optional<Page<PoSummary>> polist = porepo.findByUsername(username,pageable);
+		
 		if (polist.isEmpty())
 			throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, "NO PO FOUND!", null);
-		return ResponseEntity.ok(polist.get());
+		return polist.get().map(po -> new PoDTO(po.getPoNumber(), po.getDescription(), po.getPoIssueDate(),
+				po.getDeliveryDate(), po.getPoStatus(), po.getPoAmount(), po.getNoOfInvoices(),
+				po.getDeliveryTimelines(), po.getDeliveryPlant(), po.getEic(), po.getReceiver()));
 	}
 
 	@GetMapping("/getAllPo")
@@ -264,9 +279,8 @@ public class POController {
 
 		Page<Invoice> invoicepage = invoiceRepository.findAll(pageable);
 		Page<InvoiceDTO> invoicedtopage = invoicepage
-				.map(po -> new InvoiceDTO(po.getPoNumber(), po.getDeliveryTimelines(), po.getInvoiceDate(),
-						po.getClaimedBy(), po.getRoleName(), po.getDeliveryPlant(), po.getMobileNumber(), po.getEic(),
-						po.getType(), po.getMsmeCategory(), po.getPaymentType()));
+				.map(po -> new InvoiceDTO(po.getPoNumber(), po.getDeliveryTimelines(), po.getInvoiceDate(),po.getInvoiceAmount(),
+						 po.getDeliveryPlant(), po.getMobileNumber(), po.getEic(), po.getPaymentType()));
 		return ResponseEntity.ok(invoicedtopage);
 	}
 
@@ -383,40 +397,50 @@ public class POController {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "NO DATA FOUND");
 	}
 
-//	@GetMapping("searchInvoices")
-//	public ResponseEntity<List<Invoice>> searchInvoices(
-//			@RequestParam(value = "searchItems", required = false) String searchItems,
-//			@RequestParam(value = "username", required = true) String username,
-//			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
-//			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
-//		Page<InvoiceDTO> invoicedtopage = null;
-//		Pageable pageable = PageRequest.of(page, size);
-//		if (searchItems == null || searchItems.isEmpty()) { // Check if searchItems is null or empty
-//			invoicedtopage = invoiceRepository.findByUsername(username, pageable); // Fetch data based on username only
-//		} else {
-//			Criteria criteria = new Criteria().andOperator(Criteria.where("username").is(username),
-//					new Criteria().orOperator(Criteria.where("poNumber").regex(searchItems),
-//							Criteria.where("deliveryTimelines").regex(searchItems),
-//							Criteria.where("invoiceNumber").regex(searchItems),
-//							Criteria.where("status").regex(searchItems),
-//							Criteria.where("mobileNumber").regex(searchItems),
-//							Criteria.where("deliveryPlant").regex(searchItems),
-////							Criteria.where("remarks").regex(searchItems),
-//							Criteria.where("paymentType").regex(searchItems),
-//							Criteria.where("receiver").regex(searchItems),
-//							Criteria.where("claimedBy").regex(searchItems), Criteria.where("type").regex(searchItems),
-//							Criteria.where("msmeCategory").regex(searchItems)));
-//
-//			mongoTemplate.find(Query.query(criteria), Invoice.class);
-//		}
-//		return ResponseEntity.ok(invoices);
-//	}
+	@GetMapping("searchInvoices")
+	public ResponseEntity<Page<InvoiceDTO>> searchInvoices(
+			@RequestParam(value = "searchItems", required = false) String searchItems,
+			@RequestParam(value = "username", required = true) String username,
+			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
+			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+		Page<InvoiceDTO> invoicedtopage = null;
+		Page<Invoice> invoicepage;
+		List<Invoice> invoices = null;
+		Pageable pageable = PageRequest.of(page, size);
+		if (searchItems == null || searchItems.isEmpty()) { // Check if searchItems is null or empty
+			return ResponseEntity.ok(invoiceRepository.findByUsername(username, pageable)); // Fetch data based on username only
+		} else {
+			Criteria criteria = new Criteria().andOperator(Criteria.where("username").is(username),
+					new Criteria().orOperator(Criteria.where("poNumber").regex(searchItems),
+							Criteria.where("deliveryTimelines").regex(searchItems),
+							Criteria.where("invoiceNumber").regex(searchItems),
+							Criteria.where("status").regex(searchItems),
+							Criteria.where("mobileNumber").regex(searchItems),
+							Criteria.where("deliveryPlant").regex(searchItems),
+//							Criteria.where("remarks").regex(searchItems),
+							Criteria.where("paymentType").regex(searchItems),
+							Criteria.where("receiver").regex(searchItems),
+							Criteria.where("claimedBy").regex(searchItems), Criteria.where("type").regex(searchItems),
+							Criteria.where("msmeCategory").regex(searchItems)));
 
-	public Page<InvoiceDTO> convertListToPage(List<InvoiceDTO> invoiceList, int page, int size) {
+			invoices= mongoTemplate.find(Query.query(criteria), Invoice.class);
+			System.out.println("---------------------------");
+			invoices.forEach(System.out::println);
+		}
+		invoicepage = convertListToPage(invoices, page, size);
+		
+		invoicedtopage = invoicepage
+				.map(po -> new InvoiceDTO(po.getPoNumber(), po.getDeliveryTimelines(), po.getInvoiceDate(),po.getInvoiceAmount(),
+						 po.getDeliveryPlant(), po.getMobileNumber(), po.getEic(), po.getPaymentType()));
+		invoicedtopage.forEach(System.out::println);
+		return ResponseEntity.ok(invoicedtopage);
+	}
+
+	public Page<Invoice> convertListToPage(List<Invoice> invoiceList, int page, int size) {
 		Pageable pageable = PageRequest.of(page, size);
 		int start = Math.min((int) pageable.getOffset(), invoiceList.size());
 		int end = Math.min((start + pageable.getPageSize()), invoiceList.size());
-		List<InvoiceDTO> subList = invoiceList.subList(start, end);
+		List<Invoice> subList = invoiceList.subList(start, end);
 		return new PageImpl<>(subList, pageable, invoiceList.size());
 	}
 
@@ -512,10 +536,10 @@ public class POController {
 //			modifiedInvoice.put("remarks", invoice.getRemarks());
 			modifiedInvoice.put("poNumber", invoice.getPoNumber());
 			modifiedInvoice.put("status", invoice.getStatus());
-			modifiedInvoice.put("invoiceDate", invoice.getInvoicedate());
+			modifiedInvoice.put("invoiceDate", invoice.getInvoiceDate());
 			System.out.println("Invoice ID: " + invoice.getInvoiceNumber());
 			System.out.println("Status: " + invoice.getStatus());
-			System.out.println("InvoiceDate: " + invoice.getInvoicedate());
+			System.out.println("InvoiceDate: " + invoice.getInvoiceDate());
 			modifiedInvoices.add(modifiedInvoice);
 		}
 
@@ -524,14 +548,19 @@ public class POController {
 		return ResponseEntity.status(HttpStatus.OK).body(response);
 	}
 
-	@PostMapping("/updateInvoice")
+	@PutMapping("/updateInvoice")
 	public ResponseEntity<?> updateInvoice(@RequestHeader("remarks") Set<String> remarks,
 			@RequestHeader("id") String invoiceId) {
 		Optional<Invoice> invoiceOptional = invoiceRepository.findById(invoiceId);
 		if (invoiceOptional.isEmpty() || !invoiceOptional.isPresent())
 			return ResponseEntity.badRequest().body("invoice with this id does not exist");
 		Invoice invoice = invoiceOptional.get();
-		invoice.setRemarks(remarks);
+		Set<String> existingremarks = invoice.getRemarks();
+		if(existingremarks==null || existingremarks.isEmpty()) { 
+			existingremarks = new HashSet<String>();
+		}
+		existingremarks.addAll(remarks);
+		invoice.setRemarks(existingremarks);
 		invoice.setReceiver(invoice.getUsername());
 		invoiceRepository.save(invoice);
 		return ResponseEntity.ok(invoice);
@@ -738,7 +767,7 @@ public class POController {
 			List<DocDetails> newFiles = new ArrayList<>();
 			if (invoicefile != null) {
 				String newFileUrl = s3service.uploadFile(invoicefile);
-				newFiles.add(new DocDetails(invoicefile.getOriginalFilename(), newFileUrl));
+				newFiles.add(new DocDetails(invoicefile.getOriginalFilename(),invoiceOptional.get().getInvoiceNumber(), newFileUrl));
 			}
 
 			invoice.getInvoiceFile().addAll(newFiles);
@@ -748,7 +777,7 @@ public class POController {
 			List<DocDetails> newSupportingDocuments = new ArrayList<>();
 			if (supportingDocument != null) {
 				String newDocUrl = s3service.uploadFile(supportingDocument);
-				newSupportingDocuments.add(new DocDetails(supportingDocument.getOriginalFilename(), newDocUrl));
+				newSupportingDocuments.add(new DocDetails(supportingDocument.getOriginalFilename(),invoiceOptional.get().getInvoiceNumber(), newDocUrl));
 			}
 
 			// Append the new supporting documents to the existing list in the database

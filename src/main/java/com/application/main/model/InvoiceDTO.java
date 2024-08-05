@@ -17,24 +17,30 @@ public class InvoiceDTO extends Pageable {
 		}
 		private String poNumber;
 		private String invoiceNumber;
-		//		private String termAndConditions;
 		private String deliveryTimelines;
 		@JsonFormat(pattern = "yyyy-MM-dd")
-		private String invoicedate;
+		private String invoiceDate;
 		private String status;
-		private String claimedBy;
-		private String roleName;
 		private String deliveryPlant;
 	    private String mobileNumber;
 	    private String eic;
-	    private String type;
-	    private String msmeCategory;
-	    private boolean claimed;
-	    private String email;
 	    private String paymentType;
 	    private String invoiceurl;
+	    private String invoiceAmount;
 	    
 	    
+		public String getInvoiceDate() {
+			return invoiceDate;
+		}
+		public void setInvoiceDate(String invoiceDate) {
+			this.invoiceDate = invoiceDate;
+		}
+		public String getInvoiceAmount() {
+			return invoiceAmount;
+		}
+		public void setInvoiceAmount(String invoiceAmount) {
+			this.invoiceAmount = invoiceAmount;
+		}
 		public String getInvoiceurl() {
 			return invoiceurl;
 		}
@@ -54,24 +60,6 @@ public class InvoiceDTO extends Pageable {
 			this.deliveryTimelines = deliveryTimelines;
 		}
 		
-		public String getInvoicedate() {
-			return invoicedate;
-		}
-		public void setInvoicedate(String invoicedate) {
-			this.invoicedate = invoicedate;
-		}
-		public String getClaimedBy() {
-			return claimedBy;
-		}
-		public void setClaimedBy(String claimedBy) {
-			this.claimedBy = claimedBy;
-		}
-		public String getRoleName() {
-			return roleName;
-		}
-		public void setRoleName(String roleName) {
-			this.roleName = roleName;
-		}
 		public String getDeliveryPlant() {
 			return deliveryPlant;
 		}
@@ -90,50 +78,24 @@ public class InvoiceDTO extends Pageable {
 		public void setEic(String eic) {
 			this.eic = eic;
 		}
-		public String getType() {
-			return type;
-		}
-		public void setType(String type) {
-			this.type = type;
-		}
-		public String getMsmeCategory() {
-			return msmeCategory;
-		}
-		public void setMsmeCategory(String msmeCategory) {
-			this.msmeCategory = msmeCategory;
-		}
-		public boolean isClaimed() {
-			return claimed;
-		}
-		public void setClaimed(boolean claimed) {
-			this.claimed = claimed;
-		}
-		public String getEmail() {
-			return email;
-		}
-		public void setEmail(String email) {
-			this.email = email;
-		}
 		public String getPaymentType() {
 			return paymentType;
 		}
 		public void setPaymentType(String paymentType) {
 			this.paymentType = paymentType;
 		}
-		public InvoiceDTO(String poNumber, String deliveryTimelines, LocalDate invoicedate, String claimedBy,
-				String roleName, String deliveryPlant, String mobileNumber, String eic, String type,
-				String msmeCategory, String paymentType) {
+		
+		public InvoiceDTO(String poNumber, String deliveryTimelines, LocalDate invoicedate,
+				String invoiceAmount ,
+				 String deliveryPlant, String mobileNumber, String eic, String paymentType) {
 			super();
 			this.poNumber = poNumber;
 			this.deliveryTimelines = deliveryTimelines;
-			this.invoicedate = invoicedate.toString();
-			this.claimedBy = claimedBy;
-			this.roleName = roleName;
+			this.invoiceDate = invoicedate.toString();
 			this.deliveryPlant = deliveryPlant;
 			this.mobileNumber = mobileNumber;
+			this.invoiceAmount = invoiceAmount;
 			this.eic = eic;
-			this.type = type;
-			this.msmeCategory = msmeCategory;
 			this.paymentType = paymentType;
 		}
 		
