@@ -210,7 +210,7 @@ public class PoSummary {
 
 	public PoSummary(String poNumber, String description, LocalDate poIssueDate, LocalDate deliveryDate,
 			String deliveryPlant, String deliveryTimelines, int noOfInvoices, String eic,
-			 String poAmount, String receiver, String username, String url) {
+			 String poAmount, String receiver, String username, String savedurl) {
 		// TODO Auto-generated constructor stub
 		this.poNumber = poNumber;
 		this.description = description;
@@ -223,7 +223,8 @@ public class PoSummary {
 		this.deliveryPlant = deliveryPlant;
 		this.eic = eic;
 		this.receiver = receiver;
-		this.url = url;
+		this.url = savedurl;
 		this.username = username;
+		System.out.println(url);
 	}
 }

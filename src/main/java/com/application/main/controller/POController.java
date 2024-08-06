@@ -66,6 +66,7 @@ public class POController {
 
 	@Autowired
 	PoSummaryRepository porepo;
+	
 	private final MongoTemplate mongoTemplate;
 
 	@Autowired
@@ -158,9 +159,9 @@ public class POController {
 			
 //			backupfilerepo.save(new BackupfileUrls(poNumber , ))
 			
-			System.err.println("PO File URL : " + url);
 			PoSummary ps = new PoSummary(poNumber, description, issuedt, delt, deliveryPlant, deliveryTimelines, 0, eic,
 					poAmount, receiver, username, url);
+			System.err.println("PO File URL : " + url);
 			ps.setDoc(doc);
 			porepo.save(ps);
 			System.err.println("Po Creation Successfully Ended ! ");
@@ -213,7 +214,6 @@ public class POController {
 				}
 			});
 		}
-
 		System.out.println("receievedBy: " + receievedBy);
 		System.out.println("createdBy: " + username);
 		String eic = porepo.findByPoNumber(poNumber).get().getEic();
@@ -272,9 +272,9 @@ public class POController {
 				po.getDeliveryTimelines(), po.getDeliveryPlant(), po.getEic(), po.getReceiver(),po.getUrl()));
 	}
 	
-	@GetMapping("/getAllPoNumber")
-	public Set<?> getAllPoNumber() {
-		List<PoSummary> polist= porepo.findAll();
+	@GetMapping("/uploadInvoice/poSearch")
+	public Set<?> getAllPoNumber(@RequestParam(value = "ponumber") String ponumber) {
+		List<PoSummary> polist= porepo.findByPoNumberContaining(ponumber);
 		Set<String> poNumberlist = new HashSet<>();
 		for(PoSummary p : polist ) {
 		poNumberlist.add(p.getPoNumber());

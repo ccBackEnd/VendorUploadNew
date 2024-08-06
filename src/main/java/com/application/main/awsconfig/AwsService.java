@@ -90,6 +90,7 @@ public class AwsService {
 		invoice.setStatus("Paid");
 		invoice.setReceievedBy(eic);
 		invoice.setCreatedBy(username);
+		invoice.setInvoiceurl(invoicedetails.getUrl());
 
 		if (roleName != null && roleName.length() > 0) {
 		

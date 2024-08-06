@@ -124,7 +124,7 @@ public class PoDTO {
 
 	public PoDTO(String id , String poNumber, String description, LocalDate poIssueDate, LocalDate deliveryDate, String poStatus,
 			String poAmount, int noOfInvoices, String deliveryTimelines, String deliveryPlant,
-			String eic, String receiver,String url) {
+			String eic, String receiver,String savedurl) {
 		super();
 		this.id = id;
 		this.poNumber = poNumber;
@@ -139,6 +139,15 @@ public class PoDTO {
 		this.deliveryPlant = deliveryPlant;
 		this.eic = eic;
 		this.receiver = receiver;
+		this.setUrl(savedurl);
+		System.out.println(url);
+	}
+
+	public String getUrl() {
+		return url;
+	}
+
+	public void setUrl(String url) {
 		this.url = url;
 	}
 
