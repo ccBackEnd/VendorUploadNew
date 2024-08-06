@@ -174,7 +174,7 @@ public class AdminController {
 			Base64.Decoder decoder = Base64.getUrlDecoder();
 			String payload = new String(decoder.decode(tokenBody));
 			System.out.println("Payload: " + payload);
-			JsonNode jsonNode = new ObjectMapper().readTree(payload).path("realm_access").path("roles");
+			JsonNode jsonNode = new ObjectMapper().readTree(payload).path("resource_access").path("vendor_client").path("roles");
 			if (jsonNode.isArray()) {
 				roles = new ObjectMapper().convertValue(jsonNode, List.class);
 			}
