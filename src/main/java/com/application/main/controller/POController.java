@@ -273,10 +273,21 @@ public class POController {
 	}
 	
 	@GetMapping("/getAllPoNumber")
-	public List<String> getAllPoNumber(@RequestParam(value = "ponumber") String poNumber) {
+	public Set<?> getAllPoNumber() {
 		List<PoSummary> polist= porepo.findAll();
-		return polist.stream().flatMap(po->getAllPoNumber(poNumber).stream()).toList();
+		Set<String> poNumberlist = new HashSet<>();
+		for(PoSummary p : polist ) {
+		poNumberlist.add(p.getPoNumber());
+		}
+		return poNumberlist;
 	}
+	
+//	public Set<String> getAllPoNumber() {
+//	    List<PoSummary> polist = porepo.findAll();
+//	    return polist.stream()
+//	                 .map(PoSummary::getPoNumber) // Assuming getPoNumber() returns a String
+//	                 .collect(Collectors.toSet());
+//	}
 
 	@GetMapping("/getAllInvoices")
 	public ResponseEntity<?> getAllInvoices(@RequestParam(defaultValue = "0") int page,
