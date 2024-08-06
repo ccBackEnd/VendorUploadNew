@@ -271,6 +271,12 @@ public class POController {
 				po.getDeliveryDate(), po.getPoStatus(), po.getPoAmount(), po.getNoOfInvoices(),
 				po.getDeliveryTimelines(), po.getDeliveryPlant(), po.getEic(), po.getReceiver(),po.getUrl()));
 	}
+	
+	@GetMapping("/getAllPoNumber")
+	public List<String> getAllPoNumber(@RequestParam(value = "ponumber") String poNumber) {
+		List<PoSummary> polist= porepo.findAll();
+		return polist.stream().flatMap(po->getAllPoNumber(poNumber).stream()).toList();
+	}
 
 	@GetMapping("/getAllInvoices")
 	public ResponseEntity<?> getAllInvoices(@RequestParam(defaultValue = "0") int page,
