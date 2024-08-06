@@ -24,6 +24,7 @@ public class PoDTO {
 	private String deliveryPlant;
 	private String eic;
 	private String receiver;
+	private String url;
 
 	public String getId() {
 		return id;
@@ -123,7 +124,7 @@ public class PoDTO {
 
 	public PoDTO(String id , String poNumber, String description, LocalDate poIssueDate, LocalDate deliveryDate, String poStatus,
 			String poAmount, int noOfInvoices, String deliveryTimelines, String deliveryPlant,
-			String eic, String receiver) {
+			String eic, String receiver,String url) {
 		super();
 		this.id = id;
 		this.poNumber = poNumber;
@@ -138,6 +139,7 @@ public class PoDTO {
 		this.deliveryPlant = deliveryPlant;
 		this.eic = eic;
 		this.receiver = receiver;
+		this.url = url;
 	}
 
 }

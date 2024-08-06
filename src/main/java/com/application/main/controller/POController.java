@@ -234,7 +234,7 @@ public class POController {
 		PoDTO podto = new PoDTO(po.get().getId() ,po.get().getPoNumber(), po.get().getDescription(), po.get().getPoIssueDate(),
 				po.get().getDeliveryDate(), po.get().getPoStatus(), po.get().getPoAmount(), po.get().getNoOfInvoices(),
 				po.get().getDeliveryTimelines(), po.get().getDeliveryPlant(), po.get().getEic(),
-				po.get().getReceiver());
+				po.get().getReceiver(),po.get().getUrl());
 		return ResponseEntity.ok(podto);
 
 	}
@@ -257,7 +257,7 @@ public class POController {
 			throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, "NO PO FOUND!", null);
 		return polist.get().map(po -> new PoDTO(po.getId() , po.getPoNumber(), po.getDescription(), po.getPoIssueDate(),
 				po.getDeliveryDate(), po.getPoStatus(), po.getPoAmount(), po.getNoOfInvoices(),
-				po.getDeliveryTimelines(), po.getDeliveryPlant(), po.getEic(), po.getReceiver()));
+				po.getDeliveryTimelines(), po.getDeliveryPlant(), po.getEic(), po.getReceiver(),po.getUrl()));
 	}
 
 	@GetMapping("/getAllPo")
@@ -269,7 +269,7 @@ public class POController {
 
 		return poPage.map(po -> new PoDTO(po.getId() ,po.getPoNumber(), po.getDescription(), po.getPoIssueDate(),
 				po.getDeliveryDate(), po.getPoStatus(), po.getPoAmount(), po.getNoOfInvoices(),
-				po.getDeliveryTimelines(), po.getDeliveryPlant(), po.getEic(), po.getReceiver()));
+				po.getDeliveryTimelines(), po.getDeliveryPlant(), po.getEic(), po.getReceiver(),po.getUrl()));
 	}
 
 	@GetMapping("/getAllInvoices")
@@ -280,7 +280,7 @@ public class POController {
 		Page<Invoice> invoicepage = invoiceRepository.findAll(pageable);
 		Page<InvoiceDTO> invoicedtopage = invoicepage
 				.map(po -> new InvoiceDTO(po.getId(), po.getPoNumber(), po.getDeliveryTimelines(), po.getInvoiceDate(),po.getInvoiceAmount(),
-						 po.getDeliveryPlant(), po.getMobileNumber(), po.getEic(), po.getPaymentType()));
+						 po.getDeliveryPlant(), po.getMobileNumber(), po.getEic(), po.getPaymentType(), po.getInvoiceurl()));
 		return ResponseEntity.ok(invoicedtopage);
 	}
 
@@ -431,7 +431,7 @@ public class POController {
 		
 		invoicedtopage = invoicepage
 				.map(po -> new InvoiceDTO(po.getId() , po.getPoNumber(), po.getDeliveryTimelines(), po.getInvoiceDate(),po.getInvoiceAmount(),
-						 po.getDeliveryPlant(), po.getMobileNumber(), po.getEic(), po.getPaymentType()));
+						 po.getDeliveryPlant(), po.getMobileNumber(), po.getEic(), po.getPaymentType(),po.getInvoiceurl()));
 		invoicedtopage.forEach(System.out::println);
 		return ResponseEntity.ok(invoicedtopage);
 	}

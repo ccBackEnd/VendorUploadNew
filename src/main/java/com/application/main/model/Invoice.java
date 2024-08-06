@@ -40,7 +40,7 @@ public class Invoice {
 	private String username;
 	private Set<String> remarks;
 	private String searchItems;
-
+	private String invoiceurl;
 	private String alternateMobileNumber;
 	private String alternateEmail;
 	private String paymentType;
@@ -71,6 +71,14 @@ public class Invoice {
 
 	public void setId(String id) {
 		this.id = id;
+	}
+
+	public String getInvoiceurl() {
+		return invoiceurl;
+	}
+
+	public void setInvoiceurl(String invoiceurl) {
+		this.invoiceurl = invoiceurl;
 	}
 
 	public String getPoNumber() {

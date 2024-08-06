@@ -95,7 +95,7 @@ public class InvoiceDTO extends Pageable {
 		
 		public InvoiceDTO(String id, String poNumber, String deliveryTimelines, LocalDate invoicedate,
 				String invoiceAmount ,
-				 String deliveryPlant, String mobileNumber, String eic, String paymentType) {
+				 String deliveryPlant, String mobileNumber, String eic, String paymentType,String url) {
 			super();
 			this.id=id;
 			this.poNumber = poNumber;
@@ -106,6 +106,7 @@ public class InvoiceDTO extends Pageable {
 			this.invoiceAmount = invoiceAmount;
 			this.eic = eic;
 			this.paymentType = paymentType;
+			this.invoiceurl = url;
 		}
 		
 		public String getInvoiceNumber() {
