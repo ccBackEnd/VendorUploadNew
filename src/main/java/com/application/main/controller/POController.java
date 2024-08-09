@@ -43,7 +43,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.application.main.Repositories.DocumentRepository;
 import com.application.main.Repositories.InvoiceRepository;
 import com.application.main.Repositories.PoSummaryRepository;
-import com.application.main.Repositories.UserRepository;
+import com.application.main.Repositories.VendorUserRepository;
 import com.application.main.awsconfig.AwsService;
 import com.application.main.model.DocDetails;
 import com.application.main.model.DocumentsMongo;
@@ -51,7 +51,7 @@ import com.application.main.model.Invoice;
 import com.application.main.model.InvoiceDTO;
 import com.application.main.model.PoDTO;
 import com.application.main.model.PoSummary;
-import com.application.main.model.UserClass;
+import com.application.main.model.VendorUserModel;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -71,10 +71,9 @@ public class POController {
 
 	@Autowired
 	DocumentRepository documentRepository;
-
-	@Autowired
-	UserRepository userRepository;
 	
+	@Autowired
+	VendorUserRepository vendoruserrepo;
 	
 
 	@GetMapping("/version")
@@ -303,10 +302,10 @@ public class POController {
 
 	@GetMapping("/email")
 	public ResponseEntity<String> getEmailByEic(@RequestParam("eic") String eic) {
-		UserClass user = userRepository.findByEic(eic);
+		VendorUserModel user = vendoruserrepo.findByEic(eic);
 
 		if (user != null) {
-			return ResponseEntity.ok(user.getEmail());
+			return ResponseEntity.ok(user.getVendoremail());
 		} else {
 			return ResponseEntity.notFound().build();
 		}
