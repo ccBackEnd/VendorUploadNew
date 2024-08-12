@@ -188,7 +188,7 @@ public class POController {
 
 	@PostMapping("/uploadInvoice")
 	public ResponseEntity<?> createInvoice(@RequestParam("file") MultipartFile invoiceFile,
-			@RequestPart(name = "supportingDocument", required = false) List<MultipartFile> supportingDocument,
+			@RequestParam(name = "supportingDocument", required = false) List<MultipartFile> supportingDocument,
 			@RequestParam("poNumber") String poNumber,
 			@RequestParam(value = "alternateMobileNumber", required = false) String alternateMobileNumber,
 			@RequestParam(value = "alternateEmail", required = false) String alternateEmail,
