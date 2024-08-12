@@ -1,12 +1,12 @@
 package com.application.main.controller;
 
-import java.io.IOException;
+
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -16,7 +16,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+
+import org.apache.poi.util.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -40,12 +45,16 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.amazonaws.services.s3.AmazonS3;
+import com.application.main.Repositories.DocDetailsRepository;
 import com.application.main.Repositories.DocumentRepository;
 import com.application.main.Repositories.InvoiceRepository;
 import com.application.main.Repositories.PoSummaryRepository;
 import com.application.main.Repositories.VendorUserRepository;
+import com.application.main.URLCredentialModel.CipherEncDec;
+import com.application.main.URLCredentialModel.DocDetails;
+import com.application.main.awsconfig.AWSClientConfigService;
 import com.application.main.awsconfig.AwsService;
-import com.application.main.model.DocDetails;
 import com.application.main.model.DocumentsMongo;
 import com.application.main.model.Invoice;
 import com.application.main.model.InvoiceDTO;
@@ -66,15 +75,20 @@ public class POController {
 
 	@Autowired
 	PoSummaryRepository porepo;
-	
+
+	@Autowired
+	private AWSClientConfigService s3client;
+
+	@Autowired
+	DocDetailsRepository docdetailsrepository;
+
 	private final MongoTemplate mongoTemplate;
 
 	@Autowired
 	DocumentRepository documentRepository;
-	
+
 	@Autowired
 	VendorUserRepository vendoruserrepo;
-	
 
 	@GetMapping("/version")
 	public String version() {
@@ -153,15 +167,15 @@ public class POController {
 		try {
 			LocalDate issuedt = LocalDate.parse(poIssueDate, formatter);
 			LocalDate delt = LocalDate.parse(deliveryDate, formatter);
-			String url = s3service.uploadFile(filePO);
-			DocDetails doc = new DocDetails(filePO.getOriginalFilename(), poNumber, url);
-			
-//			backupfilerepo.save(new BackupfileUrls(poNumber , ))
-			
+			DocDetails PoUploadObject = s3service.uploadFile(filePO, poNumber, "");
+//			DocDetails doc = new DocDetails(filePO.getOriginalFilename(), poNumber, PoUploadObject.get("generatedURL").toString(),(SecretKey) PoUploadObject.get("secretkey"));
+
 			PoSummary ps = new PoSummary(poNumber, description, issuedt, delt, deliveryPlant, deliveryTimelines, 0, eic,
-					poAmount, receiver, username, url);
-			System.err.println("PO File URL : " + url);
-			ps.setDoc(doc);
+					poAmount, receiver, username, PoUploadObject.getUrl());
+			System.out.println("------------------------------------");
+			ps.setUsername(username);
+			System.err.println("PO File URL : " + PoUploadObject.getUrl());
+			ps.setDoc(PoUploadObject);
 			porepo.save(ps);
 			System.err.println("Po Creation Successfully Ended ! ");
 		} catch (Exception e) {
@@ -198,27 +212,27 @@ public class POController {
 		String username = getUserNameFromToken(token);
 		s3service.createBucket(token, username);
 
-		String invoiceURL = s3service.uploadFile(invoiceFile);
-		DocDetails invoicedetails = new DocDetails(invoiceFile.getOriginalFilename(),invoiceNumber, invoiceURL);
+		DocDetails InvoiceuploadResponse = s3service.uploadFile(invoiceFile, invoiceNumber, username);
 		List<DocDetails> suppDocNameList = new ArrayList<>();
 
 		if (supportingDocument != null) {
 			supportingDocument.forEach(document -> {
 				try {
-					String documentUrl = s3service.uploadFile(document);
-					suppDocNameList.add(new DocDetails(document.getOriginalFilename(),invoiceNumber, documentUrl));
-				} catch (IOException e) {
+					DocDetails documentUploadObject = s3service.uploadFile(document, invoiceNumber, username);
+					suppDocNameList.add(documentUploadObject);
+				} catch (Exception e) {
 					System.out.println("Supporting docs exception");
 					e.printStackTrace();
 				}
 			});
 		}
+
 		System.out.println("receievedBy: " + receievedBy);
 		System.out.println("createdBy: " + username);
 		String eic = porepo.findByPoNumber(poNumber).get().getEic();
 		Map<String, Object> uploadMongoFile = s3service.uploadMongoFile(eic, roleName, poNumber, token,
 				alternateMobileNumber, alternateEmail, remarks, invoiceAmount, invoiceDate, invoiceNumber, username,
-				username, deliveryPlant, invoicedetails, suppDocNameList, "Paid", receievedBy);
+				username, deliveryPlant, InvoiceuploadResponse, suppDocNameList, "Paid", receievedBy);
 		if (uploadMongoFile == null)
 			return ResponseEntity.ok(HttpStatus.METHOD_FAILURE);
 		return ResponseEntity.ok(uploadMongoFile);
@@ -230,10 +244,10 @@ public class POController {
 		Optional<PoSummary> po = porepo.findByPoNumber(ponumber);
 		if (po == null)
 			return ResponseEntity.ok(HttpStatus.NOT_FOUND);
-		PoDTO podto = new PoDTO(po.get().getId() ,po.get().getPoNumber(), po.get().getDescription(), po.get().getPoIssueDate(),
-				po.get().getDeliveryDate(), po.get().getPoStatus(), po.get().getPoAmount(), po.get().getNoOfInvoices(),
-				po.get().getDeliveryTimelines(), po.get().getDeliveryPlant(), po.get().getEic(),
-				po.get().getReceiver(),po.get().getUrl());
+		PoDTO podto = new PoDTO(po.get().getId(), po.get().getPoNumber(), po.get().getDescription(),
+				po.get().getPoIssueDate(), po.get().getDeliveryDate(), po.get().getPoStatus(), po.get().getPoAmount(),
+				po.get().getNoOfInvoices(), po.get().getDeliveryTimelines(), po.get().getDeliveryPlant(),
+				po.get().getEic(), po.get().getReceiver(), po.get().getUrl());
 		return ResponseEntity.ok(podto);
 
 	}
@@ -246,17 +260,16 @@ public class POController {
 
 	@GetMapping("/poSummary/getSummary")
 	public Page<PoDTO> getPobyUsername(@RequestParam(value = "username", required = false) String username,
-			@RequestParam(defaultValue = "0") int page,
-			@RequestParam(defaultValue = "10") int size
-			) {
+			@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
 		Pageable pageable = PageRequest.of(page, size);
-		Optional<Page<PoSummary>> polist = porepo.findByUsername(username,pageable);
-		
+		Optional<Page<PoSummary>> polist = porepo.findByUsername(username, pageable);
+
 		if (polist.isEmpty())
 			throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, "NO PO FOUND!", null);
-		return polist.get().map(po -> new PoDTO(po.getId() , po.getPoNumber(), po.getDescription(), po.getPoIssueDate(),
-				po.getDeliveryDate(), po.getPoStatus(), po.getPoAmount(), po.getNoOfInvoices(),
-				po.getDeliveryTimelines(), po.getDeliveryPlant(), po.getEic(), po.getReceiver(),po.getUrl()));
+		return polist.get()
+				.map(po -> new PoDTO(po.getId(), po.getPoNumber(), po.getDescription(), po.getPoIssueDate(),
+						po.getDeliveryDate(), po.getPoStatus(), po.getPoAmount(), po.getNoOfInvoices(),
+						po.getDeliveryTimelines(), po.getDeliveryPlant(), po.getEic(), po.getReceiver(), po.getUrl()));
 	}
 
 	@GetMapping("/getAllPo")
@@ -266,21 +279,21 @@ public class POController {
 		Pageable pageable = PageRequest.of(page, size, Sort.by("poIssueDate").descending());
 		Page<PoSummary> poPage = porepo.findAll(pageable);
 
-		return poPage.map(po -> new PoDTO(po.getId() ,po.getPoNumber(), po.getDescription(), po.getPoIssueDate(),
+		return poPage.map(po -> new PoDTO(po.getId(), po.getPoNumber(), po.getDescription(), po.getPoIssueDate(),
 				po.getDeliveryDate(), po.getPoStatus(), po.getPoAmount(), po.getNoOfInvoices(),
-				po.getDeliveryTimelines(), po.getDeliveryPlant(), po.getEic(), po.getReceiver(),po.getUrl()));
+				po.getDeliveryTimelines(), po.getDeliveryPlant(), po.getEic(), po.getReceiver(), po.getUrl()));
 	}
-	
+
 	@GetMapping("/uploadInvoice/poSearch")
 	public Set<?> getAllPoNumber(@RequestParam(value = "ponumber") String ponumber) {
-		List<PoSummary> polist= porepo.findByPoNumberContaining(ponumber);
+		List<PoSummary> polist = porepo.findByPoNumberContaining(ponumber);
 		Set<String> poNumberlist = new HashSet<>();
-		for(PoSummary p : polist ) {
-		poNumberlist.add(p.getPoNumber());
+		for (PoSummary p : polist) {
+			poNumberlist.add(p.getPoNumber());
 		}
 		return poNumberlist;
 	}
-	
+
 //	public Set<String> getAllPoNumber() {
 //	    List<PoSummary> polist = porepo.findAll();
 //	    return polist.stream()
@@ -294,9 +307,9 @@ public class POController {
 		Pageable pageable = PageRequest.of(page, size, Sort.by("invoicedate").descending());
 
 		Page<Invoice> invoicepage = invoiceRepository.findAll(pageable);
-		Page<InvoiceDTO> invoicedtopage = invoicepage
-				.map(po -> new InvoiceDTO(po.getId(), po.getPoNumber(), po.getDeliveryTimelines(), po.getInvoiceDate(),po.getInvoiceAmount(),
-						 po.getDeliveryPlant(), po.getMobileNumber(), po.getEic(), po.getPaymentType(), po.getInvoiceurl()));
+		Page<InvoiceDTO> invoicedtopage = invoicepage.map(po -> new InvoiceDTO(po.getId(), po.getPoNumber(),
+				po.getDeliveryTimelines(), po.getInvoiceDate(), po.getInvoiceAmount(), po.getDeliveryPlant(),
+				po.getMobileNumber(), po.getEic(), po.getPaymentType(), po.getInvoiceurl()));
 		return ResponseEntity.ok(invoicedtopage);
 	}
 
@@ -424,7 +437,8 @@ public class POController {
 		List<Invoice> invoices = null;
 		Pageable pageable = PageRequest.of(page, size);
 		if (searchItems == null || searchItems.isEmpty()) { // Check if searchItems is null or empty
-			return ResponseEntity.ok(invoiceRepository.findByUsername(username, pageable)); // Fetch data based on username only
+			return ResponseEntity.ok(invoiceRepository.findByUsername(username, pageable)); // Fetch data based on
+																							// username only
 		} else {
 			Criteria criteria = new Criteria().andOperator(Criteria.where("username").is(username),
 					new Criteria().orOperator(Criteria.where("poNumber").regex(searchItems),
@@ -439,15 +453,15 @@ public class POController {
 							Criteria.where("claimedBy").regex(searchItems), Criteria.where("type").regex(searchItems),
 							Criteria.where("msmeCategory").regex(searchItems)));
 
-			invoices= mongoTemplate.find(Query.query(criteria), Invoice.class);
+			invoices = mongoTemplate.find(Query.query(criteria), Invoice.class);
 			System.out.println("---------------------------");
 			invoices.forEach(System.out::println);
 		}
 		invoicepage = convertListToPage(invoices, page, size);
-		
-		invoicedtopage = invoicepage
-				.map(po -> new InvoiceDTO(po.getId() , po.getPoNumber(), po.getDeliveryTimelines(), po.getInvoiceDate(),po.getInvoiceAmount(),
-						 po.getDeliveryPlant(), po.getMobileNumber(), po.getEic(), po.getPaymentType(),po.getInvoiceurl()));
+
+		invoicedtopage = invoicepage.map(po -> new InvoiceDTO(po.getId(), po.getPoNumber(), po.getDeliveryTimelines(),
+				po.getInvoiceDate(), po.getInvoiceAmount(), po.getDeliveryPlant(), po.getMobileNumber(), po.getEic(),
+				po.getPaymentType(), po.getInvoiceurl()));
 		invoicedtopage.forEach(System.out::println);
 		return ResponseEntity.ok(invoicedtopage);
 	}
@@ -572,7 +586,7 @@ public class POController {
 			return ResponseEntity.badRequest().body("invoice with this id does not exist");
 		Invoice invoice = invoiceOptional.get();
 		Set<String> existingremarks = invoice.getRemarks();
-		if(existingremarks==null || existingremarks.isEmpty()) { 
+		if (existingremarks == null || existingremarks.isEmpty()) {
 			existingremarks = new HashSet<String>();
 		}
 		existingremarks.addAll(remarks);
@@ -640,6 +654,46 @@ public class POController {
 			// Handle exceptions, log them, and return an error response
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
 		}
+	}
+
+	@GetMapping("/getFileURLObject")
+	public ResponseEntity<?> getObject(@RequestHeader(value = "url") String url,
+			@RequestHeader("Authorization") String token) throws Exception {
+		
+		token = token.replace("Bearer ", "");
+		Optional<DocDetails> existingdoc = docdetailsrepository.findByUrl(url);
+		if (!existingdoc.isPresent())
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+		
+		String key = existingdoc.get().getBase64Encodedsecretkey();
+		SecretKey secretkey = convertBase64ToSecretKey(key);
+		
+		url = new CipherEncDec().decrypt(url, secretkey);
+		
+		int index = url.indexOf("123");
+		
+		String bucketname = url.substring(0, index);
+		String filename = url.substring(index + 3);
+
+		AmazonS3 s3 = s3client.awsClientConfiguration(token);
+		InputStream inputStream = s3.getObject(bucketname, filename).getObjectContent();
+		byte arr[] = IOUtils.toByteArray(inputStream);
+		ByteArrayResource resource = new ByteArrayResource(arr);
+		System.out.println("url : " + url + " : FILENAME " + filename);
+		return ResponseEntity
+				.ok()
+				.contentLength(arr.length)
+				.header("Content-type", "application/octet-stream")
+				.header("Content-disposition", "attachment; filename=\"" + filename + "\"")
+				.body(resource);		
+		
+	}
+
+	public static SecretKey convertBase64ToSecretKey(String base64Key) {
+		byte[] decodedKey = Base64.getDecoder().decode(base64Key);
+		SecretKey sec = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
+		System.err.println(sec);
+		return sec;
 	}
 
 	@PostMapping("/revert")
@@ -782,18 +836,29 @@ public class POController {
 			// Update the file in the database (modify based on your entity structure)
 			List<DocDetails> newFiles = new ArrayList<>();
 			if (invoicefile != null) {
-				String newFileUrl = s3service.uploadFile(invoicefile);
-				newFiles.add(new DocDetails(invoicefile.getOriginalFilename(),invoiceOptional.get().getInvoiceNumber(), newFileUrl));
+				DocDetails FileUploadResponse = s3service.uploadFile(invoicefile,
+						invoiceOptional.get().getInvoiceNumber(), invoiceOptional.get().getUsername());
+				newFiles.add(FileUploadResponse);
 			}
-
+//--------------------------------
+//--------------------------------
+//--------------------------------
+//--------------------------------
+//--------------------------------
+//--------------------------------
+//--------------------------------
+//--------------------------------
+//--------------------------------
+//--------------------------------
 			invoice.getInvoiceFile().addAll(newFiles);
 
 			// Update the supporting document in the database (modify based on your entity
 			// structure)
 			List<DocDetails> newSupportingDocuments = new ArrayList<>();
 			if (supportingDocument != null) {
-				String newDocUrl = s3service.uploadFile(supportingDocument);
-				newSupportingDocuments.add(new DocDetails(supportingDocument.getOriginalFilename(),invoiceOptional.get().getInvoiceNumber(), newDocUrl));
+				DocDetails DocumentUploadResponse = s3service.uploadFile(supportingDocument,
+						invoiceOptional.get().getInvoiceNumber(), invoiceOptional.get().getUsername());
+				newSupportingDocuments.add(DocumentUploadResponse);
 			}
 
 			// Append the new supporting documents to the existing list in the database
@@ -825,41 +890,44 @@ public class POController {
 		return ResponseEntity.ok(invoices);
 	}
 
-	@PostMapping("/upload-multiple")
-	public ResponseEntity<String> uploadFiles(@RequestParam("files") MultipartFile[] files,
-			@RequestParam("username") String username, HttpServletRequest request) {
-		List<String> fileNames = Collections.synchronizedList(new ArrayList<>());
-		// Convert array into list
-		List<MultipartFile> fileslist = Arrays.asList(files);
-		System.err.println(request.getHeader("Authorization"));
-
-		fileslist.parallelStream().filter(file -> !file.isEmpty()).map(file -> {
-			try {
-				DocumentsMongo document = new DocumentsMongo();
-				document.setusername(username);
-				document.setFilename(file.getOriginalFilename());
-
-				ResponseEntity<String> url = s3service
-						.uploadCompliance(request.getHeader("Authorization").replace("Bearer ", ""), file);
-				document.setUrl(url.getBody());
-
-				if (url.getStatusCodeValue() != 200) {
-					return ResponseEntity.internalServerError().body("not uploaded successfully!!");
-				}
-				documentRepository.save(document);
-
-				synchronized (fileNames) {
-					fileNames.add(file.getOriginalFilename());
-				}
-				return ResponseEntity.ok("uploaded successfully!!");
-			} catch (Exception e) {
-				e.printStackTrace();
-				return ResponseEntity.internalServerError().body("not uploaded successfully!!");
-			}
-		}).filter(response -> response.getStatusCodeValue() != 200).findAny().ifPresent(response -> {
-			// Handle the case where at least one file was not uploaded successfully
-			throw new RuntimeException("At least one file was not uploaded successfully!!");
-		});
+//	@PostMapping("/upload-multiple")
+//	public ResponseEntity<String> uploadFiles(@RequestParam("files") MultipartFile[] files, HttpServletRequest request) {
+//		
+//		String token = request.getHeader("Authorization").replace("Bearer ", "");
+//		String username = getUserNameFromToken(token);
+//		List<String> fileNames = Collections.synchronizedList(new ArrayList<>());
+//		// Convert array into list
+//		List<MultipartFile> fileslist = Arrays.asList(files);
+//		System.err.println(request.getHeader("Authorization"));
+//
+//		fileslist.parallelStream().filter(file -> !file.isEmpty()).map(file -> {
+//			try {
+//				DocumentsMongo document = new DocumentsMongo();
+//				document.setusername(username);
+//				document.setFilename(file.getOriginalFilename());
+//
+//				ResponseEntity<HashMap<String,Object>> url = s3service
+//						.uploadCompliance(token, file,username);
+//				
+//				document.setUrl(url);
+//
+//				if (url.getStatusCodeValue() != 200) {
+//					return ResponseEntity.internalServerError().body("not uploaded successfully!!");
+//				}
+//				documentRepository.save(document);
+//
+//				synchronized (fileNames) {
+//					fileNames.add(file.getOriginalFilename());
+//				}
+//				return ResponseEntity.ok("uploaded successfully!!");
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//				return ResponseEntity.internalServerError().body("not uploaded successfully!!");
+//			}
+//		}).filter(response -> response.getStatusCodeValue() != 200).findAny().ifPresent(response -> {
+//			// Handle the case where at least one file was not uploaded successfully
+//			throw new RuntimeException("At least one file was not uploaded successfully!!");
+//		});
 
 //		fileslist.parallelStream().map(file->{
 //			if(!file.isEmpty())
@@ -879,9 +947,9 @@ public class POController {
 //				fileNames.add(fileName);
 //			}
 //		}
-
-		return ResponseEntity.ok("Files uploaded successfully: " + fileNames);
-	}
+//
+//		return ResponseEntity.ok("Files uploaded successfully: " + fileNames);
+//	}
 
 	@GetMapping("getInvoiceCount")
 	public ResponseEntity<Map<String, Long>> getInvoiceCount(@RequestParam(value = "username") String username,

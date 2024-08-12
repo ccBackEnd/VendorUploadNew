@@ -35,6 +35,7 @@ public class VendorUserModel {
 	private String lastName;
 	private String displayUsername;
 	private String vendoremail;
+	private String vendoruserid;
 	private String password;
 	private int accesslevel;
 	@Default
@@ -55,39 +56,5 @@ public class VendorUserModel {
 	private boolean claimed;
 	private String address;
 	private String gstNo;
-
-	public VendorUserModel(String username, String firstName, String lastName ,String password,String vendoremail,Set<String> Userroles, Set<String> Eicdepartments) {
-		super();
-		this.username = username;
-		this.firstName = firstName;
-		this.lastName = lastName;
-//		this.enabled = enabled;
-		this.password = password;
-		this.vendoremail=vendoremail;
-//		this.accesslevel = accesslevel;
-		this.userroles = Userroles;
-		this.eicdepartments=Eicdepartments;
-		}
-	private @UniqueElements String createUniqueRandomid(int count) {
-		// TODO Auto-generated method stub
-		String id = RandomStringUtils.randomAlphanumeric(20);
-		if(vendorrepo.existsByVendoruserid(id)) {
-			createUniqueRandomid(count++);
-		}
-		System.out.println(count);
-		return id;
-	}
-
-	public VendorUserModel(String username, String firstName, String lastName ,String password,Set<String> Userroles, Set<String> Eicdepartments) {
-		super();
-		this.username = username;
-		this.firstName = firstName;
-		this.lastName = lastName;
-//		this.enabled = enabled;
-		this.password = password;
-//		this.accesslevel = accesslevel;
-		this.userroles = Userroles;
-		this.eicdepartments=Eicdepartments;
-		}
 
 }
