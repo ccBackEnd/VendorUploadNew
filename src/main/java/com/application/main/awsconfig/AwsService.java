@@ -18,7 +18,6 @@ import javax.crypto.SecretKey;
 import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
@@ -34,6 +33,8 @@ import com.application.main.URLCredentialModel.CipherEncDec;
 import com.application.main.URLCredentialModel.DocDetails;
 import com.application.main.model.Invoice;
 import com.application.main.model.PoSummary;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class AwsService {
@@ -51,10 +52,10 @@ public class AwsService {
 
 	@Autowired
 	PoSummaryRepository porepo;
-	
+
 	@Autowired
 	DocDetailsRepository docDetailsRepository;
-	
+
 	public static final String ALGORITHM = "AES";
 	public static final int KEY_SIZE = 256;
 
@@ -62,7 +63,6 @@ public class AwsService {
 		this.bucketName = "vendorportalfiles" + username;
 		this.token = token;
 		try {
-			System.out.println("CREATE BUCKET ERROR");
 			AmazonS3 awsClient = s3client.awsClientConfiguration(token);
 			if (!awsClient.doesBucketExistV2(bucketName))
 				awsClient.createBucket(bucketName);
@@ -71,8 +71,30 @@ public class AwsService {
 			System.err.println(e.getErrorMessage());
 		}
 	}
+	
+	public String getUserNameFromToken(String token) {
 
-	public DocDetails uploadFile(MultipartFile file, String Invoiceid, String username) throws IOException,Exception {
+		String tokenBody = token.split("\\.")[1];
+		Base64.Decoder decoder = Base64.getUrlDecoder();
+		String payload = new String(decoder.decode(tokenBody));
+		System.out.println("payload" + payload);
+		return getFieldFromJson(payload, "preferred_username");
+	}
+
+	private String getFieldFromJson(String json, String fieldName) {
+		String fieldValue = null;
+		try {
+			ObjectMapper objectMapper = new ObjectMapper();
+			JsonNode jsonNode = objectMapper.readTree(json);
+			fieldValue = jsonNode.get(fieldName).asText();
+			System.out.println(fieldName + " : " + fieldValue);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return fieldValue;
+	}
+
+	public DocDetails uploadFile(MultipartFile file, String Invoiceid, String username) throws IOException, Exception {
 
 		System.out.println("token from AWS Service : " + token);
 		String fileName = Invoiceid.concat("?#" + file.getOriginalFilename());
@@ -81,10 +103,10 @@ public class AwsService {
 			throw new ResponseStatusException(HttpStatus.SC_METHOD_FAILURE, "Null or Empty file not Accepted", null);
 		if (awsClient.doesObjectExist(bucketName, fileName)) {
 			System.err.println("FILE WITH " + file.getOriginalFilename() + " Already Exists !");
-		}		
+		}
 		PutObjectResult res = awsClient.putObject(bucketName, fileName, file.getInputStream(), new ObjectMetadata());
-		String invoiceFileUrl = bucketName + "123" + fileName ;
-		
+		String invoiceFileUrl = bucketName + "123" + fileName;
+
 		SecretKey secretkey = generateSecretKey();
 		invoiceFileUrl = new CipherEncDec().encrypt(invoiceFileUrl, secretkey);
 		String EncodedSecretKey = Base64.getEncoder().encodeToString(secretkey.getEncoded());
@@ -92,9 +114,9 @@ public class AwsService {
 		response.put("Response", res);
 		response.put("fileName", file.getOriginalFilename());
 		response.put("generatedURL", invoiceFileUrl);
-		
+
 		DocDetails newdoc = new DocDetails(fileName, Invoiceid, invoiceFileUrl, EncodedSecretKey);
-		
+
 //		awsClient.getObject(bucketName, fileName);
 		System.err.println("---------- Upload Response Object START ------------");
 		for (Map.Entry<String, Object> ele : response.entrySet()) {
@@ -127,13 +149,11 @@ public class AwsService {
 		invoice.setInvoiceurl(invoicedetails.getUrl());
 
 		if (roleName != null && roleName.length() > 0) {
-
 			invoice.setRoleName(roleName);
 		}
-		System.out.println("---------------->" + roleName);
 		// Update the "eic" field if the parameter is provided
 		if (eic != null && !eic.isEmpty()) {
-			invoice.setEic(eic);
+			invoice.setEic(porepo.findByPoNumber(poNumber).get().getEic());
 		}
 		if (deliveryPlant != null && !eic.isEmpty()) {
 			invoice.setDeliveryPlant(deliveryPlant);
@@ -141,8 +161,8 @@ public class AwsService {
 		List<DocDetails> invoiceobjectaslist = new ArrayList<>();
 		if (invoicedetails != null)
 			invoiceobjectaslist.add(invoicedetails);
-		invoice.setInvoiceFile(invoiceobjectaslist);
-		invoice.setSupportingDocument(suppDocNameList);
+			invoice.setInvoiceFile(invoiceobjectaslist);
+			invoice.setSupportingDocument(suppDocNameList);
 		if (alternateMobileNumber != null && !alternateMobileNumber.isEmpty()) {
 			invoice.setAlternateMobileNumber(alternateMobileNumber);
 		}
@@ -166,33 +186,30 @@ public class AwsService {
 //        if(isinvoice) invoiceur=
 		// invoice.setInvoice(isinvoice);
 		invoice = invoicerepository.save(invoice);
-		System.err.println("-------------Object Saved -------------------");
+		System.err.println("-------------Invoice with : "+ invoiceNumber + " Saved Successfully-------------------");
 
 		Optional<PoSummary> po = porepo.findByPoNumber(poNumber);
 
 		if (po.isPresent()) {
-
 			if (po.get().getInvoiceobject() == null || po.get().getInvoiceobject().isEmpty()) {
 				List<Invoice> li = new ArrayList<>();
 				li.add(invoice);
 				po.get().setNoOfInvoices(po.get().getNoOfInvoices() + 1);
 				po.get().setInvoiceobject(li);
-			} else if (!po.get().getInvoiceobject().contains(invoice)) {
+			} else {
 				po.get().getInvoiceobject().add(invoice);
 				po.get().setNoOfInvoices(po.get().getNoOfInvoices() + 1);
 				System.out.println(po.get().getNoOfInvoices());
 			}
 
-		} else
-			return Map.of("Error Found", HttpStatus.SC_SERVICE_UNAVAILABLE);
-//		else return new HashMap<>().put("Error Found", HttpStatus.SC_SERVICE_UNAVAILABLE);
 
+		} else
+			return Map.of("Error Found , PO is Not found or Not accesible", HttpStatus.SC_SERVICE_UNAVAILABLE);
+//		else return new HashMap<>().put("Error Found", HttpStatus.SC_SERVICE_UNAVAILABLE);
 //		
 		porepo.save(po.get());
 
-		System.out.println("Before saving invoice to database");
-		System.out.println("S3ServiceSaveRepo" + invoice.toString());// saving
-		System.out.println("After saving invoice to database");
+		System.out.println("Saving Invoice to database");
 		System.out.println("Invoice with details :-> \n" + invoice.toString() + " is saved succesfully");
 		Map<String, Object> responseData = new HashMap<>();
 		System.err.println("---------------------------------");
@@ -213,8 +230,6 @@ public class AwsService {
 		responseData.put("InvoiceNumber", invoiceNumber);
 		return responseData;
 	}
-
-	
 
 //	public ResponseEntity<?> uploadCompliance(String token, MultipartFile file) {
 //

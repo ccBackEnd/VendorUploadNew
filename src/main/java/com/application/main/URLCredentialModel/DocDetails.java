@@ -1,7 +1,5 @@
 package com.application.main.URLCredentialModel;
 
-import javax.crypto.SecretKey;
-
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 

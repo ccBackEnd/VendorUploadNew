@@ -10,6 +10,8 @@ import org.springframework.stereotype.Repository;
 
 import com.application.main.model.Invoice;
 import com.application.main.model.InvoiceDTO;
+import java.time.LocalDate;
+
 
 @Repository
 public interface InvoiceRepository extends MongoRepository<Invoice, String> {
@@ -20,8 +22,10 @@ public interface InvoiceRepository extends MongoRepository<Invoice, String> {
 	Boolean existsByInvoiceNumber(String invoicenumber);
 //	Invoice findBypoNumber(String poNumber);
 	Page<InvoiceDTO> findByPoNumber(String poNumber,Pageable pageable);
-	Page<InvoiceDTO> findByUsername(String username,Pageable pageable);
+	List<Invoice> findByUsername(String username);
 	Optional<Invoice> findById(String id);
+	List<Invoice> findByUsernameAndStatus(String username,String status);
+	List<Invoice> findByInvoiceDateBetween(LocalDate invoiceDate1,LocalDate invDate2);
 
 
 
