@@ -125,7 +125,7 @@ public class POController {
 			@RequestParam(value = "deliveryDate") @DateTimeFormat(pattern = "yyyy-MM-dd") String deliveryDate,
 			@RequestParam(value = "poAmount") String poAmount,
 			@RequestParam(value = "deliveryTimelines", required = false) String deliveryTimelines,
-			@RequestParam(value = "deliveryPlant", required = false) String deliveryPlant,
+			@RequestParam(value = "deliveryPlant", required = false) Set<String> deliveryPlant,
 			@RequestParam(value = "eic") String eic,
 			@RequestParam(value = "receiver", required = false) String receiver,
 			@RequestParam(value = "filePO", required = false) MultipartFile filePO, HttpServletRequest request)
@@ -160,7 +160,15 @@ public class POController {
 		return ResponseEntity.ok("Po Creation Successfully Ended ! , saved" + HttpStatus.ACCEPTED);
 	}
 
-	
+	@GetMapping
+	public Set<String> getAlldeliveryplants(String poNumber , String s){
+		Optional<PoSummary> po = porepo.findByPoNumber(poNumber);
+		if(!po.isPresent()) {
+			System.out.println("Failed to fetch");
+			return new HashSet<>();
+		}
+		return po.get().getDeliveryPlant().stream().filter(x->x.contains(s)).collect(Collectors.toSet());
+	}
 
 	@GetMapping("/GetPo")
 	public ResponseEntity<?> getPurchaseOrder(@RequestParam String ponumber) {
@@ -198,15 +206,13 @@ public class POController {
 //	}
 
 	@GetMapping("/getAllPo")
-	public Page<PoDTO> getAllPo(@RequestParam(defaultValue = "0") int page,
-			@RequestParam(defaultValue = "10") int size) {
+	public Page<PoDTO> getAllPo(@RequestHeader(value = "pageNumber",defaultValue = "0") int page,
+			@RequestHeader(value = "pageSize",defaultValue = "10") int size) {
 		System.out.println(page + " " + size);
 		Pageable pageable = PageRequest.of(page, size, Sort.by("poIssueDate").descending());
 		Page<PoSummary> poPage = porepo.findAll(pageable);
 
-		return poPage.map(po -> new PoDTO(po.getId(), po.getPoNumber(), po.getDescription(), po.getPoIssueDate(),
-				po.getDeliveryDate(), po.getPoStatus(), po.getPoAmount(), po.getNoOfInvoices(),
-				po.getDeliveryTimelines(), po.getDeliveryPlant(), po.getEic(), po.getReceiver(), po.getUrl()));
+		return convertPoAsPODTO(poPage);
 	}
 
 	@GetMapping("/uploadInvoice/poSearch")
@@ -247,8 +253,8 @@ public class POController {
 			@RequestHeader(value = "Todate") String todate,			
 			@RequestHeader(value = "searchItems", required = false) String searchItems,
 			@RequestHeader(value = "username", required = true) String username,
-			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
-			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+			@RequestHeader(value = "pageNumber",defaultValue = "0") int page,
+			@RequestHeader(value = "pageSize",defaultValue = "10") int size) {
 		Page<PoDTO> poDTOpage = null;
 		Page<PoSummary> purchaseorderpage;
 		List<PoSummary> purchaseorders = null;

@@ -8,6 +8,8 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 
 import com.application.main.model.PoSummary;
+import java.util.Set;
+
 
 @EnableMongoRepositories
 public interface PoSummaryRepository extends MongoRepository<PoSummary, String> {
@@ -20,7 +22,7 @@ public interface PoSummaryRepository extends MongoRepository<PoSummary, String> 
 	List<PoSummary> findByPoStatusAndUsername(String postatus,String username);
 	List<PoSummary> findByPoStatusOrUsername(String postatus,String username);
 	
-	
 	List<PoSummary> findByPoIssueDateBetween(LocalDate StartpoIssueDate,LocalDate EndPoIssueDate);
 	Boolean existsByPoNumber(String poNumber);
+	
 }

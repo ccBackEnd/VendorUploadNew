@@ -39,7 +39,6 @@ import com.application.main.Repositories.InvoiceRepository;
 import com.application.main.Repositories.PoSummaryRepository;
 import com.application.main.Repositories.VendorUserRepository;
 import com.application.main.URLCredentialModel.DocDetails;
-import com.application.main.awsconfig.AWSClientConfigService;
 import com.application.main.awsconfig.AwsService;
 import com.application.main.model.Invoice;
 import com.application.main.model.InvoiceDTO;
@@ -55,9 +54,6 @@ public class InvoiceController {
 
 	@Autowired
 	PoSummaryRepository porepo;
-
-	@Autowired
-	private AWSClientConfigService s3client;
 
 	@Autowired
 	DocDetailsRepository docdetailsrepository;
@@ -161,8 +157,8 @@ public class InvoiceController {
 			@RequestHeader(value = "Fromdate") String fromdate, @RequestHeader(value = "Todate") String todate,
 			@RequestHeader(value = "searchItems", required = false) String searchItems,
 			@RequestHeader(value = "username", required = true) String username,
-			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
-			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+			@RequestHeader(value = "pageNumber",defaultValue = "0",required = false) int page,
+			@RequestHeader(value = "pageSize",defaultValue = "10",required = false) int size) {
 		Page<InvoiceDTO> invoicedtopage = null;
 		Page<Invoice> invoicepage;
 		List<Invoice> invoices = null;
@@ -211,8 +207,8 @@ public class InvoiceController {
 
 	@GetMapping("InvoiceSearchbyPONumber")
 	public ResponseEntity<?> searchPOByPrefix(@RequestParam(value = "poNumber") String poNumber,
-			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
-			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+			@RequestHeader(value = "pageNumber",defaultValue = "0",required = false) int page,
+			@RequestHeader(value = "pageSize",defaultValue = "10",required = false) int size) {
 		Pageable pageable = PageRequest.of(page, size);
 
 		Page<InvoiceDTO> poList = invoiceRepository.findByPoNumberContaining(poNumber, pageable);
@@ -230,8 +226,8 @@ public class InvoiceController {
 
 	@GetMapping("/invoices-by-username")
 	public ResponseEntity<Page<InvoiceDTO>> getInvoicesByUsername1(@RequestParam("username") String username,
-			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
-			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+			@RequestHeader(value = "pageNumber",defaultValue = "0",required = false) int page,
+			@RequestHeader(value = "pageSize",defaultValue = "10",required = false) int size) {
 		Page<InvoiceDTO> invoices = convertInvoicetoInvoiceDTO(
 				convertListToPage(invoiceRepository.findByUsername(username), page, size));
 		if (invoices.isEmpty())
@@ -420,8 +416,8 @@ public class InvoiceController {
 
 	@GetMapping("/getting")
 	public ResponseEntity<Page<InvoiceDTO>> getInvoicesByReceiver(@RequestParam("receiver") String receiver,
-			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
-			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+			@RequestHeader(value = "pageNumber",defaultValue = "0",required = false) int page,
+			@RequestHeader(value = "pageSize",defaultValue = "10",required = false) int size) {
 		Pageable pageable = PageRequest.of(page, size);
 		// Retrieve invoices with the given receiver username
 		Page<InvoiceDTO> invoices = invoiceRepository.findByReceiver(receiver, pageable);
@@ -496,8 +492,8 @@ public class InvoiceController {
 
 	@GetMapping("getInvoiceCount")
 	public ResponseEntity<Map<String, Long>> getInvoiceCount(@RequestParam(value = "username") String username,
-			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
-			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+			@RequestHeader(value = "pageNumber",defaultValue = "0",required = false) int page,
+			@RequestHeader(value = "pageSize",defaultValue = "10",required = false) int size) {
 		Page<InvoiceDTO> invoicesByUsername = convertInvoicetoInvoiceDTO(
 				convertListToPage(invoiceRepository.findByUsername(username), page, size));
 		long invoiceCountByUsername = invoicesByUsername.getTotalElements();
@@ -524,8 +520,8 @@ public class InvoiceController {
 	public Page<InvoiceDTO> getInvoicesByParameters(@RequestParam(value = "username", required = false) String username,
 			@RequestParam(value = "poNumber", required = false) String poNumber,
 			@RequestParam(value = "invoiceNumber", required = false) String invoiceNumber,
-			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
-			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+			@RequestHeader(value = "pageNumber",defaultValue = "0",required = false) int page,
+			@RequestHeader(value = "pageSize",defaultValue = "10",required = false) int size) {
 		Pageable pageable = PageRequest.of(page, size);
 		if (poNumber == null && invoiceNumber == null && username == null) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Please provide atleast one detail !!");
@@ -567,8 +563,8 @@ public class InvoiceController {
 	@GetMapping("getDash")
 	public ResponseEntity<Map<String, Object>> getInvoicesByUsername11(
 			@RequestParam(value = "username") String username,
-			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
-			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+			@RequestHeader(value = "pageNumber",defaultValue = "0",required = false) int page,
+			@RequestHeader(value = "pageSize",defaultValue = "10",required = false) int size) {
 		Page<InvoiceDTO> invoices = convertInvoicetoInvoiceDTO(
 				convertListToPage(invoiceRepository.findByUsername(username), page, size));
 		if (invoices.isEmpty()) {
@@ -632,8 +628,8 @@ public class InvoiceController {
 
 	@GetMapping("getDashboard")
 	public ResponseEntity<Map<String, Object>> getInvoicesByUsername(@RequestParam(value = "username") String username,
-			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
-			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+			@RequestHeader(value = "pageNumber",defaultValue = "0",required = false) int page,
+			@RequestHeader(value = "pageSize",defaultValue = "10",required = false) int size) {
 		Page<InvoiceDTO> invoices = convertInvoicetoInvoiceDTO(
 				convertListToPage(invoiceRepository.findByUsername(username), page, size));
 		if (invoices.isEmpty()) {
@@ -698,8 +694,8 @@ public class InvoiceController {
 
 	@GetMapping("getInvoice")
 	public ResponseEntity<?> getInvoicesBypoNumber(@RequestParam(value = "poNumber") String poNumber,
-			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
-			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+			@RequestHeader(value = "pageNumber",defaultValue = "0",required = false) int page,
+			@RequestHeader(value = "pageSize",defaultValue = "10",required = false) int size) {
 		Pageable pageable = PageRequest.of(page, size);
 		System.err.println("get PO");
 		Page<InvoiceDTO> invoice1 = invoiceRepository.findByPoNumber(poNumber, pageable);
@@ -742,8 +738,8 @@ public class InvoiceController {
 	@GetMapping("/invoices")
 	public ResponseEntity<Page<InvoiceDTO>> getInvoicesByUsernameAndClaimedTrue(
 			@RequestParam("username") String username,
-			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
-			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+			@RequestHeader(value = "pageNumber",defaultValue = "0",required = false) int page,
+			@RequestHeader(value = "pageSize",defaultValue = "10",required = false) int size) {
 		Pageable pageable = PageRequest.of(page, size);
 		Page<InvoiceDTO> invoice = invoiceRepository.findByUsernameAndClaimedIsTrue(username, pageable);
 
@@ -757,8 +753,8 @@ public class InvoiceController {
 
 	@GetMapping("/getInboxData")
 	public ResponseEntity<Page<InvoiceDTO>> getAllInvoices(@RequestHeader("roleName") String roleName,
-			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
-			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+			@RequestHeader(value = "pageNumber",defaultValue = "0",required = false) int page,
+			@RequestHeader(value = "pageSize",defaultValue = "10",required = false) int size) {
 		Pageable pageable = PageRequest.of(page, size);
 		Page<InvoiceDTO> invoicedtopage;
 
@@ -779,8 +775,8 @@ public class InvoiceController {
 
 	@GetMapping("/InboxData")
 	public ResponseEntity<Page<InvoiceDTO>> getInvoicesByUsernameAndStatus(@RequestParam("username") String username,
-			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
-			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+			@RequestHeader(value = "pageNumber",defaultValue = "0",required = false) int page,
+			@RequestHeader(value = "pageSize",defaultValue = "10",required = false) int size) {
 		Pageable pageable = PageRequest.of(page, size);
 
 		// Retrieve invoices with status "reverted"
@@ -796,8 +792,8 @@ public class InvoiceController {
 	@GetMapping("/getClaimedInbox")
 	public ResponseEntity<Page<InvoiceDTO>> getAllInvoices(@RequestHeader(required = false) Boolean claimed,
 			@RequestHeader("claimedBy") String claimedBy,
-			@RequestParam(value = "page", defaultValue = "0", required = false) int page,
-			@RequestParam(value = "size", defaultValue = "10", required = false) int size) {
+			@RequestHeader(value = "pageNumber",defaultValue = "0",required = false) int page,
+			@RequestHeader(value = "pageSize",defaultValue = "10",required = false) int size) {
 		Pageable pageable = PageRequest.of(page, size);
 
 		try {
