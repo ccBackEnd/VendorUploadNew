@@ -44,6 +44,8 @@ public class PoSummary {
 	private String type;
 	private String url;
 	private DocDetails doc;
+	private String msmecategoy;
+	
 	
 	public DocDetails getDoc() {
 		return doc;

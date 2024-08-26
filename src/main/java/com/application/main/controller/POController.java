@@ -161,11 +161,11 @@ public class POController {
 	}
 
 	@GetMapping
-	public Set<String> getAlldeliveryplants(String poNumber , String s){
+	public Set<?> getAlldeliveryplants(String poNumber , String s){
 		Optional<PoSummary> po = porepo.findByPoNumber(poNumber);
 		if(!po.isPresent()) {
 			System.out.println("Failed to fetch");
-			return new HashSet<>();
+			return Set.of(HttpStatus.NOT_FOUND);
 		}
 		return po.get().getDeliveryPlant().stream().filter(x->x.contains(s)).collect(Collectors.toSet());
 	}
@@ -215,15 +215,7 @@ public class POController {
 		return convertPoAsPODTO(poPage);
 	}
 
-	@GetMapping("/uploadInvoice/poSearch")
-	public Set<?> getAllPoNumber(@RequestParam(value = "ponumber") String ponumber) {
-		List<PoSummary> polist = porepo.findByPoNumberContaining(ponumber);
-		Set<String> poNumberlist = new HashSet<>();
-		for (PoSummary p : polist) {
-			poNumberlist.add(p.getPoNumber());
-		}
-		return poNumberlist;
-	}
+	
 	
 	
 
@@ -235,16 +227,16 @@ public class POController {
 //	}
 
 
-	@GetMapping("/email")
-	public ResponseEntity<String> getEmailByEic(@RequestParam("eic") String eic) {
-		VendorUserModel user = vendoruserrepo.findByEic(eic);
-
-		if (user != null) {
-			return ResponseEntity.ok(user.getVendoremail());
-		} else {
-			return ResponseEntity.notFound().build();
-		}
-	}
+//	@GetMapping("/email")
+//	public ResponseEntity<String> getEmailByEic(@RequestParam("eic") String eic) {
+//		VendorUserModel user = vendoruserrepo.findByEic(eic);
+//
+//		if (user != null) {
+//			return ResponseEntity.ok(user.getVendoremail());
+//		} else {
+//			return ResponseEntity.notFound().build();
+//		}
+//	}
 
 	@GetMapping("/poSummary/getSummary")
 	public ResponseEntity<Page<PoDTO>> searchInvoices(

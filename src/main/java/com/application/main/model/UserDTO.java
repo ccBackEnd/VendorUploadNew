@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-//@Document(collection = "VendorUser")
+@Document(collection = "Userdetails")
 public class UserDTO {
 	
 	@Id

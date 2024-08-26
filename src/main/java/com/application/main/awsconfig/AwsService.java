@@ -2,6 +2,7 @@ package com.application.main.awsconfig;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -71,7 +72,7 @@ public class AwsService {
 			System.err.println(e.getErrorMessage());
 		}
 	}
-	
+
 	public String getUserNameFromToken(String token) {
 
 		String tokenBody = token.split("\\.")[1];
@@ -134,59 +135,49 @@ public class AwsService {
 		return keyGenerator.generateKey();
 	}
 
-	public Map<String, Object> uploadMongoFile(String eic, String roleName, String poNumber, String token,
-			String alternateMobileNumber, String alternateEmail, Set<String> remarks, String invoiceAmount,
-			String invoiceDate, String invoiceNumber, String username, String createdBy, String deliveryPlant,
-			DocDetails invoicedetails, List<DocDetails> suppDocNameList, String status, String receievedBy)
+	public Map<String, Object> uploadMongoFile(String username , String msmecategory, String poNumber, String paymentType,
+			String deliveryPlant, String invoiceDate, String invoiceNumber, String invoiceAmount, String mobileNumber,
+			String email, String alternateMobileNumber, String alternateEmail, String remarks, String ses,
+			boolean isagainstLC, boolean isGst, boolean isTredExchangePayment, String factoryunitnumber,
+			boolean isMDCCPayment, String mdccnumber, String sellerGst, String buyerGst, String bankaccountno,
+			DocDetails invoicedetails, List<DocDetails> suppDocNameList)
 
 			throws IOException {
 
 		Invoice invoice = new Invoice();
 		invoice.setPoNumber(poNumber);
-		invoice.setStatus("Paid");
-		invoice.setReceievedBy(eic);
-		invoice.setCreatedBy(username);
+		invoice.setStatus("Sent");
 		invoice.setInvoiceurl(invoicedetails.getUrl());
+		invoice.setEic(porepo.findByPoNumber(poNumber).get().getEic());
+		invoice.setDeliveryPlant(deliveryPlant);
 
-		if (roleName != null && roleName.length() > 0) {
-			invoice.setRoleName(roleName);
-		}
-		// Update the "eic" field if the parameter is provided
-		if (eic != null && !eic.isEmpty()) {
-			invoice.setEic(porepo.findByPoNumber(poNumber).get().getEic());
-		}
-		if (deliveryPlant != null && !eic.isEmpty()) {
-			invoice.setDeliveryPlant(deliveryPlant);
-		}
 		List<DocDetails> invoiceobjectaslist = new ArrayList<>();
 		if (invoicedetails != null)
 			invoiceobjectaslist.add(invoicedetails);
-			invoice.setInvoiceFile(invoiceobjectaslist);
-			invoice.setSupportingDocument(suppDocNameList);
-		if (alternateMobileNumber != null && !alternateMobileNumber.isEmpty()) {
+
+		invoice.setInvoiceFile(invoiceobjectaslist);
+		invoice.setSupportingDocument(suppDocNameList);
+
+		if (alternateMobileNumber != null && !alternateMobileNumber.isEmpty())
 			invoice.setAlternateMobileNumber(alternateMobileNumber);
-		}
-		invoice.setAlternateMobileNumber(alternateMobileNumber);
-		invoice.setAlternateEmail(alternateEmail);
-		invoice.setRemarks(remarks);
+		
+		if (alternateEmail != null && !alternateEmail.isEmpty())
+			invoice.setAlternateEmail(alternateEmail);
+		
+		Set<String> set = new HashSet<String>();
+		set.add(remarks);
+		invoice.setRemarks(set);
 		invoice.setUsername(username);
 		invoice.setInvoiceAmount(invoiceAmount);
 		DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE;
 		if (invoiceDate != null) {
 			invoice.setInvoiceDate(LocalDate.parse(invoiceDate, formatter));
 			System.err.println(invoice.getInvoiceDate());
-			// 9289114318
 		}
 
-		System.out.println("---------------->" + roleName);
 		invoice.setInvoiceNumber(invoiceNumber);
-		invoice.setCreatedBy(createdBy);
-		invoice.setReceievedBy(receievedBy);
-//		invoice.setCurrentDateTime(LocalDateTime.now());
-//        if(isinvoice) invoiceur=
-		// invoice.setInvoice(isinvoice);
-		invoice = invoicerepository.save(invoice);
-		System.err.println("-------------Invoice with : "+ invoiceNumber + " Saved Successfully-------------------");
+		invoice.setCurrentDateTime(LocalDateTime.now());
+		System.err.println("-------------Invoice with : " + invoiceNumber + " Saved Successfully-------------------");
 
 		Optional<PoSummary> po = porepo.findByPoNumber(poNumber);
 
@@ -202,30 +193,26 @@ public class AwsService {
 				System.out.println(po.get().getNoOfInvoices());
 			}
 
-
 		} else
-			return Map.of("Error Found , PO is Not found or Not accesible", HttpStatus.SC_SERVICE_UNAVAILABLE);
+			return Map.of("Error Found , PO is Not found or Not accesible", HttpStatus.SC_CONFLICT);
 //		else return new HashMap<>().put("Error Found", HttpStatus.SC_SERVICE_UNAVAILABLE);
 //		
 		porepo.save(po.get());
+		invoice = invoicerepository.save(invoice);
 
 		System.out.println("Saving Invoice to database");
 		System.out.println("Invoice with details :-> \n" + invoice.toString() + " is saved succesfully");
+		
 		Map<String, Object> responseData = new HashMap<>();
 		System.err.println("---------------------------------");
 
 		responseData.put("alternateNumber", alternateMobileNumber);
 		responseData.put("alternativeEmail", alternateEmail);
-		responseData.put("Eic", eic);
-		responseData.put("roleName", roleName);
-//		
 		Set<String> remarkslist = new HashSet<>();
-		remarkslist.addAll(remarks);
+		remarkslist.addAll(set);
 		responseData.put("Remarks", remarkslist);
 		responseData.put("InvoiceAmount", invoiceAmount);
 		responseData.put("Username", username);
-		responseData.put("createdBy", createdBy);
-		responseData.put("receievedBy", receievedBy);
 		responseData.put("deliveryPlant", deliveryPlant);
 		responseData.put("InvoiceNumber", invoiceNumber);
 		return responseData;

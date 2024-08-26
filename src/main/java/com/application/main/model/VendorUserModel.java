@@ -1,15 +1,10 @@
 package com.application.main.model;
 
-import java.util.List;
-import java.util.Set;
-
-import org.apache.commons.lang.RandomStringUtils;
 import org.hibernate.validator.constraints.UniqueElements;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import com.application.main.Repositories.VendorUserRepository;
+import com.application.main.Paymentmodel.AddressVendorUser;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,40 +16,66 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Document(collection = "User_details")
+@Document(collection = "VendorUserModel")
 public class VendorUserModel {
 
-	@Autowired
-	VendorUserRepository vendorrepo;
-	
 	@Id
 	private String id;
-
-	private String username;
-	private String firstName;
-	private String lastName;
-	private String displayUsername;
-	private String vendoremail;
-	private String vendoruserid;
+	@UniqueElements
+	private String clientVendorId;
+	private String clientVendorEmail;
 	private String password;
-	private int accesslevel;
+//	private int accesslevel;
 	@Default
 	private Boolean enabled = false;
-	private Set<String> userroles;
-	private Set<String> eicdepartments;
 	
-	private String eic;
-	private String otp;
-	
-	private String organizationName;
-	private String adminOforganization;
-	private String phoneNumber;
+	private String companyName;
+	@UniqueElements
 	private String panNumber;
-	private List<String> gstDocument;
-	private List<String> panDocument;
-	private List<String> incorporationDocument;
-	private boolean claimed;
-	private String address;
-	private String gstNo;
+	@UniqueElements
+	private String gstNumber;
+	@UniqueElements
+	private String tanno;
+	@UniqueElements
+	private String msmeno;
+	private String industrytype;
+	private AddressVendorUser registrationAddress;
+	private AddressVendorUser warehouseAddress;
+	private AddressVendorUser hoAddress;
+	
+	private Boolean isClient;
+	private Boolean isVendor;
+	
 
+	@Data
+	@AllArgsConstructor
+	@NoArgsConstructor
+	@Builder
+	 public static class ContactPerson {
+			private String contactpersonname;
+			private String contactpersonmobilenumber;
+			private String contactpersonemail;
+			private String contactpersondesignation;
+			
+		}
+		private ContactPerson contactpersondetails;
+	
+	public VendorUserModel(String organizationName, @UniqueElements String panNumber, @UniqueElements String gstNumber,
+			@UniqueElements String tanno, @UniqueElements String msmeno, String industrytype,AddressVendorUser registrationAddress, Boolean isClient,
+			ContactPerson contactpersondetails) {
+		super();
+		this.companyName = organizationName;
+		this.panNumber = panNumber;
+		this.gstNumber = gstNumber;
+		this.tanno = tanno;
+		this.msmeno = msmeno;
+		this.registrationAddress = registrationAddress;
+		this.industrytype = industrytype;
+		this.isClient = isClient;
+		this.contactpersondetails = contactpersondetails;
+	}
+	
+	
+	
+	
 }
