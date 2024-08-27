@@ -160,7 +160,7 @@ public class POController {
 		return ResponseEntity.ok("Po Creation Successfully Ended ! , saved" + HttpStatus.ACCEPTED);
 	}
 
-	@GetMapping("/getdeliveryplants")
+	@GetMapping("/getPOdeliveryplants")
 	public Set<?> getAlldeliveryplants(@RequestHeader(value="poNumber") String poNumber , @RequestParam(value="deliveryplant") String s){
 		Optional<PoSummary> po = porepo.findByPoNumber(poNumber);
 		if(!po.isPresent()) {
