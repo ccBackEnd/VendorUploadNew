@@ -16,7 +16,6 @@ public class RecieverDetails {
 	@Id
 	private String id;
 
-	private String paymentId;
 	private String recievername;
     private String accountnumber;
     private String ifsccode;

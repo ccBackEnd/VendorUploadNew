@@ -16,7 +16,6 @@ public class PayerDetails {
 	@Id
 	private String id;
 	
-	private String paymentId;
 	private String payerName;
     private String accountnumber;
     private String ifsccode;

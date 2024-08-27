@@ -65,11 +65,11 @@ import jakarta.servlet.http.HttpServletRequest;
 public class POController {
 
 	@Autowired
-	AwsService s3service;
-
-	@Autowired
 	PoSummaryRepository porepo;
 
+	@Autowired
+	AwsService s3service;
+	
 	@Autowired
 	private AWSClientConfigService s3client;
 
@@ -160,18 +160,18 @@ public class POController {
 		return ResponseEntity.ok("Po Creation Successfully Ended ! , saved" + HttpStatus.ACCEPTED);
 	}
 
-	@GetMapping
-	public Set<?> getAlldeliveryplants(String poNumber , String s){
+	@GetMapping("/getdeliveryplants")
+	public Set<?> getAlldeliveryplants(@RequestHeader(value="poNumber") String poNumber , @RequestParam(value="deliveryplant") String s){
 		Optional<PoSummary> po = porepo.findByPoNumber(poNumber);
 		if(!po.isPresent()) {
 			System.out.println("Failed to fetch");
-			return Set.of(HttpStatus.NOT_FOUND);
+			return Set.of(HttpStatus.NOT_FOUND,"NO PO FOUND !");
 		}
 		return po.get().getDeliveryPlant().stream().filter(x->x.contains(s)).collect(Collectors.toSet());
 	}
 
 	@GetMapping("/GetPo")
-	public ResponseEntity<?> getPurchaseOrder(@RequestParam String ponumber) {
+	public ResponseEntity<?> getPurchaseOrder(@RequestParam(value="poNumber") String ponumber) {
 		System.out.println("Getting Purchase Order");
 		Optional<PoSummary> po = porepo.findByPoNumber(ponumber);
 		if (po == null)

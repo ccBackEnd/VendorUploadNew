@@ -99,7 +99,8 @@ public class InvoiceController {
 	}
 
 	@PostMapping("/uploadInvoice")
-	public ResponseEntity<?> createInvoice(@RequestParam(value = "poNumber") String poNumber,
+	public ResponseEntity<?> createInvoice(
+			@RequestParam(value = "poNumber") String poNumber,
 			@RequestParam(value = "paymentType", required = false) String paymentType,
 			@RequestParam(value = "deliveryPlant") String deliveryPlant,
 			@RequestParam(value = "invoiceDate") String invoiceDate,

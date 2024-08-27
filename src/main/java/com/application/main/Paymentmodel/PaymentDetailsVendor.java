@@ -25,16 +25,16 @@ public class PaymentDetailsVendor {
 	private String invoiceNumber;
 	private String accountnumber;
 	private LocalDate paymentDate;
-	private BigDecimal paymentAmount;
+	private String paymentAmount;
 	private String paymentMethod;
 	private String paymentStatus;
 	private String paymentReferenceNumber;
 
 	private PayerDetails payerdetails;
 	private RecieverDetails receiverDetails;
-	private BigDecimal transactionFees;
+	private String transactionFees;
 	private String remarks;
-
+	
 	// Getters and Setters
 	// Constructors
 	// toString(), equals(), hashCode(), etc.
