@@ -72,7 +72,7 @@ public class PoSummary {
 		this.username = username;
 	}
 
-	public PoSummary(String poNumber, String description, LocalDate poIssueDate, LocalDate deliveryDate,
+	public PoSummary(String poStatus ,String poNumber, String description, LocalDate poIssueDate, LocalDate deliveryDate,
 			Set<String> deliveryPlant, String deliveryTimelines, int noOfInvoices, String eic,
 			 String poAmount, String receiver, String username, String savedurl) {
 		// TODO Auto-generated constructor stub
@@ -80,7 +80,7 @@ public class PoSummary {
 		this.description = description;
 		this.poIssueDate = poIssueDate;
 		this.deliveryDate = deliveryDate;
-		this.poStatus = "New Purchase Order : Pending Status";
+		this.poStatus = poStatus;
 		this.poAmount = poAmount;
 		this.noOfInvoices = noOfInvoices;
 		this.deliveryTimelines = deliveryTimelines;

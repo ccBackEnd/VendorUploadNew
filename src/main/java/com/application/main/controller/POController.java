@@ -121,6 +121,7 @@ public class POController {
 	@PostMapping("/createPO")
 	public ResponseEntity<?> createPurchaseOrder(@RequestParam(value = "poNumber") String poNumber,
 			@RequestParam(value = "description", required = false) String description,
+			@RequestParam(value = "poStatus", required = true) String poStatus, 
 			@RequestParam(value = "poIssueDate") @DateTimeFormat(pattern = "yyyy-MM-dd") String poIssueDate,
 			@RequestParam(value = "deliveryDate") @DateTimeFormat(pattern = "yyyy-MM-dd") String deliveryDate,
 			@RequestParam(value = "poAmount") String poAmount,
@@ -144,7 +145,7 @@ public class POController {
 			DocDetails PoUploadObject = s3service.uploadFile(filePO, poNumber, "");
 //			DocDetails doc = new DocDetails(filePO.getOriginalFilename(), poNumber, PoUploadObject.get("generatedURL").toString(),(SecretKey) PoUploadObject.get("secretkey"));
 
-			PoSummary ps = new PoSummary(poNumber, description, issuedt, delt, deliveryPlant, deliveryTimelines, 0, eic,
+			PoSummary ps = new PoSummary(poStatus , poNumber, description, issuedt, delt, deliveryPlant, deliveryTimelines, 0, eic,
 					poAmount, receiver, username, PoUploadObject.getUrl());
 			System.out.println("------------------------------------");
 			ps.setUsername(username);
@@ -240,7 +241,7 @@ public class POController {
 
 	@GetMapping("/poSummary/getSummary")
 	public ResponseEntity<Page<PoDTO>> searchInvoices(
-			@RequestHeader(value = "FilterBy" , required = false) String poStatus,
+			@RequestHeader(value = "Filterby" , required = false) String poStatus,
 			@RequestHeader(value = "Fromdate") String fromdate,
 			@RequestHeader(value = "Todate") String todate,			
 			@RequestHeader(value = "searchItems", required = false) String searchItems,
@@ -252,12 +253,11 @@ public class POController {
 		List<PoSummary> purchaseorders = null;
 		try {
 			Criteria criteria = new Criteria().where("username").is(username);
-			if((poStatus ==null || poStatus.equalsIgnoreCase("All"))) {
-				purchaseorders = porepo.findByUsername(username);
-			}
+			Criteria searchedcriteria=null;
 			if (searchItems != null && !searchItems.isEmpty()) {
 				System.out.println(searchItems);
-				criteria = criteria.andOperator(criteria,
+				 searchedcriteria = new Criteria().andOperator(
+						new Criteria().where("username").is(username),
 						new Criteria().orOperator(Criteria.where("poNumber").regex(searchItems),
 							Criteria.where("deliveryTimelines").regex(searchItems),
 							Criteria.where("description").regex(searchItems),
@@ -271,9 +271,12 @@ public class POController {
 							Criteria.where("poAmount").regex(searchItems),
 							Criteria.where("createdBy").regex(searchItems)));
 			}
-			else if (poStatus != null && !poStatus.isEmpty())
-					criteria = criteria.andOperator(Criteria.where("status").regex(poStatus));
+			if(!poStatus.equalsIgnoreCase("All")) {
+				criteria = criteria.andOperator(searchedcriteria,Criteria.where("poStatus").regex(poStatus));
+			}
+			
 			purchaseorders = mongoTemplate.find(Query.query(criteria), PoSummary.class);
+			System.out.println("-------------");
 			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 			LocalDate Fromdate = LocalDate.parse(fromdate, formatter);
 			LocalDate Todate = LocalDate.parse(todate,formatter);
@@ -321,10 +324,10 @@ public class POController {
 		SecretKey secretkey = convertBase64ToSecretKey(key);
 		
 		url = new CipherEncDec().decrypt(url, secretkey);
-		int index = url.indexOf("123");
+		int index = url.indexOf("XCIDHK2788k99BBSEEL99");
 		
 		String bucketname = url.substring(0, index);
-		String filename = url.substring(index + 3);
+		String filename = url.substring(index + "XCIDHK2788k99BBSEEL99".length());
 		System.out.println("Bucketname : ############################### " + bucketname );
 		System.out.println("filename : ############################### " + filename);
 		AmazonS3 s3 = s3client.awsClientConfiguration(token);

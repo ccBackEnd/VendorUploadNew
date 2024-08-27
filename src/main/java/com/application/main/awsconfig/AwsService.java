@@ -106,7 +106,7 @@ public class AwsService {
 			System.err.println("FILE WITH " + file.getOriginalFilename() + " Already Exists !");
 		}
 		PutObjectResult res = awsClient.putObject(bucketName, fileName, file.getInputStream(), new ObjectMetadata());
-		String invoiceFileUrl = bucketName + "123" + fileName;
+		String invoiceFileUrl = bucketName + "XCIDHK2788k99BBSEEL99" + fileName;
 
 		SecretKey secretkey = generateSecretKey();
 		invoiceFileUrl = new CipherEncDec().encrypt(invoiceFileUrl, secretkey);
