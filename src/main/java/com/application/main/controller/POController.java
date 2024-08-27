@@ -280,9 +280,12 @@ public class POController {
 			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 			LocalDate Fromdate = LocalDate.parse(fromdate, formatter);
 			LocalDate Todate = LocalDate.parse(todate,formatter);
-			
+			System.out.println(fromdate + " : " + todate);
 			List<PoSummary>  purchaseordersbydate = porepo.findByPoIssueDateBetween(Fromdate, Todate);
-			if(!purchaseorders.isEmpty() && !purchaseordersbydate.isEmpty())
+			for(PoSummary po : purchaseordersbydate) {
+				System.out.println("------------------");
+				System.out.print("DATE : " + po.getPoIssueDate());
+			}
 			purchaseorders = purchaseorders.stream().filter(obj1 -> purchaseordersbydate.stream().anyMatch(obj2-> obj2.getPoNumber().equals(obj1.getPoNumber()))).toList();
 			
 			purchaseorderpage = convertListToPage(purchaseorders, page, size);
