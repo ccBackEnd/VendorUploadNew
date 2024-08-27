@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -19,6 +20,7 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.poi.util.IOUtils;
+import org.apache.uima.cas.CASException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.data.domain.Page;
@@ -253,7 +255,8 @@ public class POController {
 		List<PoSummary> purchaseorders = null;
 		try {
 			Criteria criteria = new Criteria().where("username").is(username);
-			Criteria searchedcriteria=null;
+			Pattern inc = Pattern.compile(poStatus, Pattern.CASE_INSENSITIVE);
+			Criteria searchedcriteria=new Criteria().where("poStatus").regex(inc);
 			if (searchItems != null && !searchItems.isEmpty()) {
 				System.out.println(searchItems);
 				 searchedcriteria = new Criteria().andOperator(
@@ -272,7 +275,7 @@ public class POController {
 							Criteria.where("createdBy").regex(searchItems)));
 			}
 			if(!poStatus.equalsIgnoreCase("All")) {
-				criteria = criteria.andOperator(searchedcriteria,Criteria.where("poStatus").regex(poStatus));
+				criteria = criteria.andOperator(searchedcriteria,new Criteria().where("poStatus").regex(inc));
 			}
 			
 			purchaseorders = mongoTemplate.find(Query.query(criteria), PoSummary.class);

@@ -132,8 +132,7 @@ public class PoDTO {
 		this.description = description;
 		this.poIssueDate = poIssueDate.toString();
 		this.deliveryDate = deliveryDate.toString();
-		if(poStatus.contains("Pending")) this.poStatus = "Pending" ;
-		else this.poStatus = "Completed";
+		this.poStatus = poStatus;
 		this.poAmount = poAmount;
 		this.noOfInvoices = noOfInvoices;
 		this.deliveryTimelines = deliveryTimelines;
