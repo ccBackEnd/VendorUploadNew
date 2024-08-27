@@ -325,7 +325,8 @@ public class POController {
 		
 		String bucketname = url.substring(0, index);
 		String filename = url.substring(index + 3);
-
+		System.out.println("Bucketname : ############################### " + bucketname );
+		System.out.println("filename : ############################### " + filename);
 		AmazonS3 s3 = s3client.awsClientConfiguration(token);
 		InputStream inputStream = s3.getObject(bucketname, filename).getObjectContent();
 		byte arr[] = IOUtils.toByteArray(inputStream);
