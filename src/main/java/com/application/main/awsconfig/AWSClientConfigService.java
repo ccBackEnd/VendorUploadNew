@@ -39,8 +39,9 @@ public class AWSClientConfigService implements AWSClientConfig{
 		clientConfiguration.setSignerOverride("AWSS3V4SignerType");
 		
 		BasicSessionCredentials response = awsConfigService.client(token);
-		System.out.println(response);
+		System.out.println("Response   " +response);
 		AmazonS3 awsClient = awsS3ContentService.client();
+		System.out.println("------------------------CLIENT CREATED SUCCESSFULLY-----------------------------");
 		awsClient = AmazonS3ClientBuilder.standard()
 				.withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(baseUrl+":"+port,
 						Regions.US_EAST_1.getName()))
