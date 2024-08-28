@@ -10,15 +10,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class AddressVendorUser {
-	
+
 	private String address;
 	private String city;
 	private String zipCode;
 	private String state;
 	private String country;
-    private String landmark;
-    
-    
-    
+	private String landmark;
+
 //	private String statecode;
 }

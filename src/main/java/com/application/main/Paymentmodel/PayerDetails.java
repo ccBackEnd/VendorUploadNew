@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 @NoArgsConstructor
 @Data
 @AllArgsConstructor
@@ -15,12 +16,12 @@ import lombok.NoArgsConstructor;
 public class PayerDetails {
 	@Id
 	private String id;
-	
+
 	private String payerName;
-    private String accountnumber;
-    private String ifsccode;
-    private String payerEmail;
-    private String payerPhoneNumber;
-    private String payerpaymentType;
+	private String accountnumber;
+	private String ifsccode;
+	private String payerEmail;
+	private String payerPhoneNumber;
+	private String payerpaymentType;
 
 }

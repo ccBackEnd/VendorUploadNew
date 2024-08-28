@@ -1,6 +1,5 @@
 package com.application.main.Paymentmodel;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import org.springframework.data.annotation.Id;
@@ -24,17 +23,17 @@ public class PaymentDetailsVendor {
 	private String poNumber;
 	private String invoiceNumber;
 	private String accountnumber;
-	private LocalDate paymentDate;
+	private String transactionFees;
 	private String paymentAmount;
 	private String paymentMethod;
 	private String paymentStatus;
+	private LocalDate paymentDate;
 	private String paymentReferenceNumber;
+	private String paymentremarks;
 
 	private PayerDetails payerdetails;
 	private RecieverDetails receiverDetails;
-	private String transactionFees;
-	private String remarks;
-	
+
 	// Getters and Setters
 	// Constructors
 	// toString(), equals(), hashCode(), etc.

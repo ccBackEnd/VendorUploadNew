@@ -4,7 +4,6 @@ import java.time.LocalDate;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.data.web.SpringDataWebProperties.Pageable;
 import org.springframework.data.annotation.Id;
 
 import com.application.main.PaymentRepositories.PaymentDetailsRepository;
@@ -20,7 +19,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Data
 @Builder
-public class InvoiceDTO extends Pageable {
+public class InvoiceDTO {
 
 	@Autowired
 	PaymentDetailsRepository paymentrepo;

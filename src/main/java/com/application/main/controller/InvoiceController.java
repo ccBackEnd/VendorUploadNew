@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -99,8 +100,7 @@ public class InvoiceController {
 	}
 
 	@PostMapping("/uploadInvoice")
-	public ResponseEntity<?> createInvoice(
-			@RequestParam(value = "poNumber") String poNumber,
+	public ResponseEntity<?> createInvoice(@RequestParam(value = "poNumber") String poNumber,
 			@RequestParam(value = "paymentType", required = false) String paymentType,
 			@RequestParam(value = "deliveryPlant") String deliveryPlant,
 			@RequestParam(value = "invoiceDate") String invoiceDate,
@@ -222,7 +222,7 @@ public class InvoiceController {
 
 	@GetMapping("searchInvoices")
 	public ResponseEntity<Page<InvoiceDTO>> searchInvoices(
-			@RequestHeader(value = "FilterBy", required = false) String invoiceStatus,
+			@RequestHeader(value = "Filterby", required = false) String invoiceStatus,
 			@RequestHeader(value = "Fromdate") String fromdate, @RequestHeader(value = "Todate") String todate,
 			@RequestHeader(value = "searchItems", required = false) String searchItems,
 			@RequestHeader(value = "username", required = true) String username,
@@ -233,13 +233,15 @@ public class InvoiceController {
 		List<Invoice> invoices = null;
 		try {
 			Criteria criteria = new Criteria().where("username").is(username);
+			Pattern inc = Pattern.compile(invoiceStatus, Pattern.CASE_INSENSITIVE);
+			Criteria searchedcriteria = new Criteria().where("status").regex(inc);
 
 			if (invoiceStatus == null || invoiceStatus.equalsIgnoreCase("All")) {
 				invoices = invoiceRepository.findByUsername(username);
 			}
 			if (searchItems != null && !searchItems.isEmpty()) {
 				System.out.println(searchItems);
-				criteria = criteria.andOperator(criteria,
+				searchedcriteria = new Criteria().andOperator(new Criteria().where("username").is(username),
 						new Criteria().orOperator(Criteria.where("poNumber").regex(searchItems),
 								Criteria.where("invoiceNumber").regex(searchItems),
 								Criteria.where("status").regex(searchItems),
@@ -251,8 +253,12 @@ public class InvoiceController {
 								Criteria.where("receievedBy").regex(searchItems),
 								Criteria.where("docId").regex(searchItems), Criteria.where("eic").regex(searchItems),
 								Criteria.where("msmeCategory").regex(searchItems)));
-			} else if (invoiceStatus != null && !invoiceStatus.isEmpty())
+			}
+
+			if (!invoiceStatus.equalsIgnoreCase("All")) {
+				criteria = criteria.andOperator(searchedcriteria, new Criteria().where("status").regex(inc));
 				criteria = criteria.andOperator(Criteria.where("status").regex(invoiceStatus));
+			}
 			invoices = mongoTemplate.find(Query.query(criteria), Invoice.class);
 			System.out.println(invoices);
 			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");

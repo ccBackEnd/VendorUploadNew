@@ -11,12 +11,11 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import com.application.main.URLCredentialModel.DocDetails;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Builder.Default;
 
 @NoArgsConstructor
 @Data
@@ -27,7 +26,6 @@ public class Invoice {
 
 	@Id
 	private String id;
-	@Size(min = 10, max = 10, message = "PO number or package number must be 10 digits")
 	private String poNumber;
 	private String paymentType;
 	private String deliveryPlant;
