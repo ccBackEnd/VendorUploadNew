@@ -1,15 +1,11 @@
 package com.application.main.controller;
 
-
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -20,7 +16,6 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.poi.util.IOUtils;
-import org.apache.uima.cas.CASException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.data.domain.Page;
@@ -56,9 +51,6 @@ import com.application.main.awsconfig.AwsService;
 import com.application.main.model.DocumentsMongo;
 import com.application.main.model.PoDTO;
 import com.application.main.model.PoSummary;
-import com.application.main.model.VendorUserModel;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -71,7 +63,7 @@ public class POController {
 
 	@Autowired
 	AwsService s3service;
-	
+
 	@Autowired
 	private AWSClientConfigService s3client;
 
@@ -97,22 +89,10 @@ public class POController {
 		this.mongoTemplate = mongoTemplate;
 	}
 
-
-	@GetMapping("/dateparsingcheck")
-	public LocalDate parsed(@RequestParam String invoiceDate) {
-
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-		LocalDate date = LocalDate.parse(invoiceDate, formatter);
-		System.out.println(date);
-		return date;
-	}
-
 	@GetMapping("/testing")
 	public LocalDate testing() {
 		return LocalDate.now();
 	}
-
-	
 
 	public Page<?> convertStreamToPage(Stream<?> entityStream, int page, int size) {
 		List<?> entityList = entityStream.collect(Collectors.toList());
@@ -123,7 +103,7 @@ public class POController {
 	@PostMapping("/createPO")
 	public ResponseEntity<?> createPurchaseOrder(@RequestParam(value = "poNumber") String poNumber,
 			@RequestParam(value = "description", required = false) String description,
-			@RequestParam(value = "poStatus", required = true) String poStatus, 
+			@RequestParam(value = "poStatus", required = true) String poStatus,
 			@RequestParam(value = "poIssueDate") @DateTimeFormat(pattern = "yyyy-MM-dd") String poIssueDate,
 			@RequestParam(value = "deliveryDate") @DateTimeFormat(pattern = "yyyy-MM-dd") String deliveryDate,
 			@RequestParam(value = "poAmount") String poAmount,
@@ -147,8 +127,8 @@ public class POController {
 			DocDetails PoUploadObject = s3service.uploadFile(filePO, poNumber, "");
 //			DocDetails doc = new DocDetails(filePO.getOriginalFilename(), poNumber, PoUploadObject.get("generatedURL").toString(),(SecretKey) PoUploadObject.get("secretkey"));
 
-			PoSummary ps = new PoSummary(poStatus , poNumber, description, issuedt, delt, deliveryPlant, deliveryTimelines, 0, eic,
-					poAmount, receiver, username, PoUploadObject.getUrl());
+			PoSummary ps = new PoSummary(poStatus, poNumber, description, issuedt, delt, deliveryPlant,
+					deliveryTimelines, 0, eic, poAmount, receiver, username, PoUploadObject.getUrl());
 			System.out.println("------------------------------------");
 			ps.setUsername(username);
 			System.err.println("PO File URL : " + PoUploadObject.getUrl());
@@ -164,17 +144,18 @@ public class POController {
 	}
 
 	@GetMapping("/getPOdeliveryplants")
-	public Set<?> getAlldeliveryplants(@RequestHeader(value="poNumber") String poNumber , @RequestParam(value="deliveryplant") String s){
+	public Set<?> getAlldeliveryplants(@RequestHeader(value = "poNumber") String poNumber,
+			@RequestParam(value = "deliveryplant") String s) {
 		Optional<PoSummary> po = porepo.findByPoNumber(poNumber);
-		if(!po.isPresent()) {
+		if (!po.isPresent()) {
 			System.out.println("Failed to fetch");
-			return Set.of(HttpStatus.NOT_FOUND,"NO PO FOUND !");
+			return Set.of(HttpStatus.NOT_FOUND, "NO PO FOUND !");
 		}
-		return po.get().getDeliveryPlant().stream().filter(x->x.contains(s)).collect(Collectors.toSet());
+		return po.get().getDeliveryPlant().stream().filter(x -> x.contains(s)).collect(Collectors.toSet());
 	}
 
 	@GetMapping("/GetPo")
-	public ResponseEntity<?> getPurchaseOrder(@RequestParam(value="poNumber") String ponumber) {
+	public ResponseEntity<?> getPurchaseOrder(@RequestParam(value = "poNumber") String ponumber) {
 		System.out.println("Getting Purchase Order");
 		Optional<PoSummary> po = porepo.findByPoNumber(ponumber);
 		if (po == null)
@@ -193,43 +174,6 @@ public class POController {
 		return roles;
 	}
 
-//	@GetMapping("/poSummary/getSummary")
-//	public Page<PoDTO> getPobyUsername(@RequestHeader(value = "userName", required = false) String username,
-//			@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
-//		List<PoSummary> polist = porepo.findByUsername(username);
-//		
-//
-//		if (polist.isEmpty())
-//			throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, "NO PO FOUND!", null);
-//		Page<PoSummary> purchaseorderpage = convertListToPage(polist, page, size);
-//		 
-//		 return purchaseorderpage.map(po -> new PoDTO(po.getId(), po.getPoNumber(), po.getDescription(),
-//					po.getPoIssueDate(), po.getDeliveryDate(), po.getPoStatus(),po.getPoAmount(),
-//					po.getNoOfInvoices(),po.getDeliveryTimelines(),po.getDeliveryPlant(),po.getEic(),po.getReceiver(),po.getUrl()));
-//	}
-
-	@GetMapping("/getAllPo")
-	public Page<PoDTO> getAllPo(@RequestHeader(value = "pageNumber",defaultValue = "0") int page,
-			@RequestHeader(value = "pageSize",defaultValue = "10") int size) {
-		System.out.println(page + " " + size);
-		Pageable pageable = PageRequest.of(page, size, Sort.by("poIssueDate").descending());
-		Page<PoSummary> poPage = porepo.findAll(pageable);
-
-		return convertPoAsPODTO(poPage);
-	}
-
-	
-	
-	
-
-//	public Set<String> getAllPoNumber() {
-//	    List<PoSummary> polist = porepo.findAll();
-//	    return polist.stream()
-//	                 .map(PoSummary::getPoNumber) // Assuming getPoNumber() returns a String
-//	                 .collect(Collectors.toSet());
-//	}
-
-
 //	@GetMapping("/email")
 //	public ResponseEntity<String> getEmailByEic(@RequestParam("eic") String eic) {
 //		VendorUserModel user = vendoruserrepo.findByEic(eic);
@@ -242,75 +186,71 @@ public class POController {
 //	}
 
 	@GetMapping("/poSummary/getSummary")
-	public ResponseEntity<Page<PoDTO>> searchInvoices(
-			@RequestHeader(value = "Filterby" , required = false) String poStatus,
-			@RequestHeader(value = "Fromdate") String fromdate,
-			@RequestHeader(value = "Todate") String todate,			
+	public ResponseEntity<?> searchInvoices(@RequestHeader(value = "Filterby", required = false) String poStatus,
+			@RequestHeader(value = "Fromdate") String fromdate, @RequestHeader(value = "Todate") String todate,
 			@RequestHeader(value = "searchItems", required = false) String searchItems,
 			@RequestHeader(value = "username", required = true) String username,
-			@RequestHeader(value = "pageNumber",defaultValue = "0") int page,
-			@RequestHeader(value = "pageSize",defaultValue = "10") int size) {
+			@RequestHeader(value = "pageNumber", defaultValue = "0") int page,
+			@RequestHeader(value = "pageSize", defaultValue = "10") int size) {
 		Page<PoDTO> poDTOpage = null;
 		Page<PoSummary> purchaseorderpage;
 		List<PoSummary> purchaseorders = null;
 		try {
 			Criteria criteria = new Criteria().where("username").is(username);
 			Pattern inc = Pattern.compile(poStatus, Pattern.CASE_INSENSITIVE);
-			Criteria searchedcriteria=new Criteria().where("poStatus").regex(inc);
+			Criteria searchedcriteria = new Criteria().where("poStatus").regex(inc);
 			if (searchItems != null && !searchItems.isEmpty()) {
 				System.out.println(searchItems);
-				 searchedcriteria = new Criteria().andOperator(
-						new Criteria().where("username").is(username),
+				searchedcriteria = new Criteria().andOperator(new Criteria().where("username").is(username),
 						new Criteria().orOperator(Criteria.where("poNumber").regex(searchItems),
-							Criteria.where("deliveryTimelines").regex(searchItems),
-							Criteria.where("description").regex(searchItems),
-							Criteria.where("deliveryPlant").regex(searchItems),
-							Criteria.where("poStatus").regex(searchItems),
-							Criteria.where("eic").regex(searchItems),
-							Criteria.where("remarks").regex(searchItems),
-							Criteria.where("receiver").regex(searchItems),
-							Criteria.where("invoiceobject.invoiceAmount").regex(searchItems),
-							Criteria.where("invoiceobject.invoiceNumber").regex(searchItems),
-							Criteria.where("poAmount").regex(searchItems),
-							Criteria.where("createdBy").regex(searchItems)));
+								Criteria.where("deliveryTimelines").regex(searchItems),
+								Criteria.where("description").regex(searchItems),
+								Criteria.where("deliveryPlant").regex(searchItems),
+								Criteria.where("poStatus").regex(searchItems), Criteria.where("eic").regex(searchItems),
+								Criteria.where("remarks").regex(searchItems),
+								Criteria.where("receiver").regex(searchItems),
+								Criteria.where("invoiceobject.invoiceAmount").regex(searchItems),
+								Criteria.where("invoiceobject.invoiceNumber").regex(searchItems),
+								Criteria.where("poAmount").regex(searchItems),
+								Criteria.where("createdBy").regex(searchItems)));
 			}
-			if(!poStatus.equalsIgnoreCase("All")) {
-				criteria = criteria.andOperator(searchedcriteria,new Criteria().where("poStatus").regex(inc));
+			if (!poStatus.equalsIgnoreCase("All")) {
+				criteria = criteria.andOperator(searchedcriteria, new Criteria().where("poStatus").regex(inc));
 			}
-			
+
 			purchaseorders = mongoTemplate.find(Query.query(criteria), PoSummary.class);
 			System.out.println("-------------");
 			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 			LocalDate Fromdate = LocalDate.parse(fromdate, formatter);
-			LocalDate Todate = LocalDate.parse(todate,formatter);
+			LocalDate Todate = LocalDate.parse(todate, formatter);
 			System.out.println(fromdate + " : " + todate);
-			List<PoSummary>  purchaseordersbydate = porepo.findByPoIssueDateBetween(Fromdate, Todate);
-			for(PoSummary po : purchaseordersbydate) {
+			List<PoSummary> purchaseordersbydate = porepo.findByPoIssueDateBetween(Fromdate, Todate);
+			for (PoSummary po : purchaseordersbydate) {
 				System.out.println("------------------");
 				System.out.print("DATE : " + po.getPoIssueDate());
 			}
-			purchaseorders = purchaseorders.stream().filter(obj1 -> purchaseordersbydate.stream().anyMatch(obj2-> obj2.getPoNumber().equals(obj1.getPoNumber()))).toList();
-			
+			purchaseorders = purchaseorders.stream().filter(obj1 -> purchaseordersbydate.stream()
+					.anyMatch(obj2 -> obj2.getPoNumber().equals(obj1.getPoNumber()))).toList();
+			if (purchaseorders.isEmpty())
+				return ResponseEntity.ok("");
 			purchaseorderpage = convertListToPage(purchaseorders, page, size);
 			poDTOpage = convertPoAsPODTO(purchaseorderpage);
 			poDTOpage.forEach(System.out::println);
 			return ResponseEntity.ok(poDTOpage);
-		}catch(Exception e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND);
 		}
 	}
 
-	
-
 	private Page<PoDTO> convertPoAsPODTO(Page<PoSummary> purchaseorderpage) {
 		return purchaseorderpage.map(po -> new PoDTO(po.getId(), po.getPoNumber(), po.getDescription(),
-				po.getPoIssueDate(), po.getDeliveryDate(), po.getPoStatus(),po.getPoAmount(),
-				po.getNoOfInvoices(),po.getDeliveryTimelines(),po.getDeliveryPlant(),po.getEic(),po.getReceiver(),po.getUrl()));
+				po.getPoIssueDate(), po.getDeliveryDate(), po.getPoStatus(), po.getPoAmount(), po.getNoOfInvoices(),
+				po.getDeliveryTimelines(), po.getDeliveryPlant(), po.getEic(), po.getReceiver(), po.getUrl()));
 	}
 
 	private Page<PoSummary> convertListToPage(List<PoSummary> purchaseorders, int page, int size) {
-		Pageable pageable = PageRequest.of(page, size);
+		Pageable pageable = PageRequest.of(page, size,Sort.by("poIssueDate").descending());
 		int start = Math.min((int) pageable.getOffset(), purchaseorders.size());
 		int end = Math.min((start + pageable.getPageSize()), purchaseorders.size());
 		List<PoSummary> subList = purchaseorders.subList(start, end);
@@ -320,34 +260,31 @@ public class POController {
 	@GetMapping("/getFileURLObject")
 	public ResponseEntity<?> getObject(@RequestHeader(value = "url") String url,
 			@RequestHeader("Authorization") String token) throws Exception {
-		
+
 		token = token.replace("Bearer ", "");
 		Optional<DocDetails> existingdoc = docdetailsrepository.findByUrl(url);
 		if (!existingdoc.isPresent())
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-		
+
 		String key = existingdoc.get().getBase64Encodedsecretkey();
 		SecretKey secretkey = convertBase64ToSecretKey(key);
-		
+
 		url = new CipherEncDec().decrypt(url, secretkey);
 		int index = url.indexOf("XCIDHK2788k99BBSEEL99");
-		
+
 		String bucketname = url.substring(0, index);
 		String filename = url.substring(index + "XCIDHK2788k99BBSEEL99".length());
-		System.out.println("Bucketname : ############################### " + bucketname );
+		System.out.println("Bucketname : ############################### " + bucketname);
 		System.out.println("filename : ############################### " + filename);
 		AmazonS3 s3 = s3client.awsClientConfiguration(token);
 		InputStream inputStream = s3.getObject(bucketname, filename).getObjectContent();
 		byte arr[] = IOUtils.toByteArray(inputStream);
 		ByteArrayResource resource = new ByteArrayResource(arr);
 		System.out.println("url : " + url + " : FILENAME " + filename);
-		return ResponseEntity
-				.ok()
-				.contentLength(arr.length)
-				.header("Content-type", "application/octet-stream")
-				.header("Content-disposition", "attachment; filename=\"" + filename + "\"")
-				.body(resource);		
-		
+
+		return ResponseEntity.ok().contentLength(arr.length).header("Content-type", "application/octet-stream")
+				.header("Content-disposition", "attachment; filename=\"" + filename + "\"").body(resource);
+
 	}
 
 	public static SecretKey convertBase64ToSecretKey(String base64Key) {
@@ -357,14 +294,10 @@ public class POController {
 		return sec;
 	}
 
-	
-
 	@GetMapping("/get-compliances") // to get all the compliances by username, username is required in path
 	public ResponseEntity<?> getCompliances(@RequestParam("username") String username) {
 		List<DocumentsMongo> compliances = documentRepository.findAllByusername(username);
 		return ResponseEntity.ok(compliances);
 	}
-
-	
 
 }
