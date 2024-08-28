@@ -221,8 +221,7 @@ public class InvoiceController {
 	}
 
 	@GetMapping("searchInvoices")
-	public ResponseEntity<Page<InvoiceDTO>> searchInvoices(
-			@RequestHeader(value = "Filterby", required = false) String invoiceStatus,
+	public ResponseEntity<?> searchInvoices(@RequestHeader(value = "Filterby") String invoiceStatus,
 			@RequestHeader(value = "Fromdate") String fromdate, @RequestHeader(value = "Todate") String todate,
 			@RequestHeader(value = "searchItems", required = false) String searchItems,
 			@RequestHeader(value = "username", required = true) String username,
@@ -257,7 +256,6 @@ public class InvoiceController {
 
 			if (!invoiceStatus.equalsIgnoreCase("All")) {
 				criteria = criteria.andOperator(searchedcriteria, new Criteria().where("status").regex(inc));
-				criteria = criteria.andOperator(Criteria.where("status").regex(invoiceStatus));
 			}
 			invoices = mongoTemplate.find(Query.query(criteria), Invoice.class);
 			System.out.println(invoices);
@@ -265,10 +263,9 @@ public class InvoiceController {
 			LocalDate Fromdate = LocalDate.parse(fromdate, formatter);
 			LocalDate Todate = LocalDate.parse(todate, formatter);
 			List<Invoice> invoices1 = invoiceRepository.findByInvoiceDateBetween(Fromdate, Todate);
-			if (!invoices.isEmpty() && !invoices1.isEmpty()) {
-				invoices = invoices.stream().filter(obj1 -> invoices1.stream()
-						.anyMatch(obj2 -> obj2.getInvoiceNumber().equals(obj1.getInvoiceNumber()))).toList();
-			}
+			invoices = invoices.stream().filter(obj1 -> invoices1.stream()
+					.anyMatch(obj2 -> obj2.getInvoiceNumber().equals(obj1.getInvoiceNumber()))).toList();
+			if(invoices.isEmpty()) return ResponseEntity.ok("");
 			invoicepage = convertListToPage(invoices, page, size);
 			invoicedtopage = convertInvoicetoInvoiceDTO(invoicepage);
 			invoicedtopage.forEach(System.out::println);
@@ -298,16 +295,6 @@ public class InvoiceController {
 				.distinct().collect(Collectors.toList());
 	}
 
-	@GetMapping("/invoices-by-username")
-	public ResponseEntity<Page<InvoiceDTO>> getInvoicesByUsername1(@RequestParam("username") String username,
-			@RequestHeader(value = "pageNumber", defaultValue = "0", required = false) int page,
-			@RequestHeader(value = "pageSize", defaultValue = "10", required = false) int size) {
-		Page<InvoiceDTO> invoices = convertInvoicetoInvoiceDTO(
-				convertListToPage(invoiceRepository.findByUsername(username), page, size));
-		if (invoices.isEmpty())
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No invoices found for the given username");
-		return ResponseEntity.status(HttpStatus.OK).body(invoices);
-	}
 
 	@PostMapping("/revert")
 	public ResponseEntity<?> revertInvoice(@RequestParam("id") String id,
@@ -441,16 +428,7 @@ public class InvoiceController {
 						invoiceOptional.get().getInvoiceNumber(), invoiceOptional.get().getUsername());
 				newFiles.add(FileUploadResponse);
 			}
-//--------------------------------
-//--------------------------------
-//--------------------------------
-//--------------------------------
-//--------------------------------
-//--------------------------------
-//--------------------------------
-//--------------------------------
-//--------------------------------
-//--------------------------------
+
 			invoice.getInvoiceFile().addAll(newFiles);
 
 			// Update the supporting document in the database (modify based on your entity
@@ -674,9 +652,13 @@ public class InvoiceController {
 	}
 
 	@GetMapping("getDashboard")
-	public ResponseEntity<Map<String, Object>> getInvoicesByUsername(@RequestParam(value = "username") String username,
+	public ResponseEntity<Map<String, Object>> getInvoicesByUsername(
 			@RequestHeader(value = "pageNumber", defaultValue = "0", required = false) int page,
-			@RequestHeader(value = "pageSize", defaultValue = "10", required = false) int size) {
+			@RequestHeader(value = "pageSize", defaultValue = "10", required = false) int size,
+			HttpServletRequest request) {
+		String token = request.getHeader("Authorization").replace("Bearer ", "");
+		String username = s3service.getUserNameFromToken(token);
+
 		Page<InvoiceDTO> invoices = convertInvoicetoInvoiceDTO(
 				convertListToPage(invoiceRepository.findByUsername(username), page, size));
 		if (invoices.isEmpty()) {
