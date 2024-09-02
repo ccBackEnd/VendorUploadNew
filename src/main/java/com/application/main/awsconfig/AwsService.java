@@ -60,8 +60,8 @@ public class AwsService {
 	public static final String ALGORITHM = "AES";
 	public static final int KEY_SIZE = 256;
 
-	public void createBucket(String token, String username) {
-		this.bucketName = "vendorportalfiles" + username;
+	public void createBucket(String token, String folderappend) {
+		this.bucketName = "vendorportalfiles" + folderappend;
 		this.token = token;
 		try {
 			AmazonS3 awsClient = s3client.awsClientConfiguration(token);
@@ -98,7 +98,9 @@ public class AwsService {
 	public DocDetails uploadFile(MultipartFile file, String Invoiceid, String username) throws IOException, Exception {
 
 		System.out.println("token from AWS Service : " + token);
+		
 		String fileName = Invoiceid.concat("?#" + file.getOriginalFilename());
+		
 		AmazonS3 awsClient = s3client.awsClientConfiguration(token);
 		if (file == null || file.isEmpty())
 			throw new ResponseStatusException(HttpStatus.SC_METHOD_FAILURE, "Null or Empty file not Accepted", null);

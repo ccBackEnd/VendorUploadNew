@@ -29,13 +29,15 @@ public class Invoice {
 	private String poNumber;
 	private String paymentType;
 	private String deliveryPlant;
+	private List<InvoicesHistory> invoicehistorylist;
 
 	@JsonFormat(pattern = "yyyy-mm-dd")
 	private LocalDate invoiceDate;
 	private LocalDateTime currentDateTime;
 
 	private String invoiceNumber;
-	private String status;
+	@Default
+	private String status = "new";
 	private List<DocDetails> supportingDocument;
 	private List<DocDetails> invoiceFile;
 	private String invoiceAmount;
@@ -61,6 +63,11 @@ public class Invoice {
 	private String sellerGst;
 	private String buyerGst;
 	private String bankaccountno;
+	
+	@Default
+	private int sentCount = 0;
+	@Default
+	private int revertCount =0;
 
 	public Invoice(String deliveryPlant) {
 		super();

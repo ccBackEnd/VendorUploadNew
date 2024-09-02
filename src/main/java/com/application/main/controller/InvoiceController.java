@@ -1,5 +1,6 @@
 package com.application.main.controller;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -23,6 +24,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,9 +36,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.application.main.PaymentRepositories.PaymentDetailsRepository;
+import com.application.main.Paymentmodel.PaymentDetailsRepository;
 import com.application.main.Repositories.DocDetailsRepository;
 import com.application.main.Repositories.DocumentRepository;
+import com.application.main.Repositories.InvoiceHistoryRepository;
 import com.application.main.Repositories.InvoiceRepository;
 import com.application.main.Repositories.PoSummaryRepository;
 import com.application.main.Repositories.VendorUserRepository;
@@ -44,6 +47,7 @@ import com.application.main.URLCredentialModel.DocDetails;
 import com.application.main.awsconfig.AwsService;
 import com.application.main.model.Invoice;
 import com.application.main.model.InvoiceDTO;
+import com.application.main.model.InvoicesHistory;
 import com.application.main.model.PoSummary;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -59,10 +63,16 @@ public class InvoiceController {
 	PaymentDetailsRepository paymentrepo;
 
 	@Autowired
+	InvoiceHistoryRepository invrepo;
+
+	@Autowired
 	PoSummaryRepository porepo;
 
 	@Autowired
 	DocDetailsRepository docdetailsrepository;
+
+	@Autowired
+	private KafkaTemplate<String, Invoice> kafkaInvoice;
 
 	private final MongoTemplate mongoTemplate;
 
@@ -98,6 +108,18 @@ public class InvoiceController {
 	public Set<String> deliveryplants(@RequestParam String poNumber) {
 		return porepo.findByPoNumber(poNumber).get().getDeliveryPlant();
 	}
+
+//	@GetMapping("/getInvoiceHistory")
+//	public ResponseEntity<?> gethistory(@RequestParam(value = "invoiceNo" , required = true) String invoiceno,
+//			@RequestParam(value = "status" , required = false) String status){
+//		List<InvoicesHistory> invoicelist;
+//		if(status==null) {
+//			invoicelist = invrepo.findByInvoiceNoOrderByInvoicedate(invoiceno);
+//		}
+//		else invoicelist = invrepo.findByInvoiceNoAndStatus(invoiceno, status);
+//		return ResponseEntity.ok(invoicelist.so);
+//		
+//	}
 
 	@PostMapping("/uploadInvoice")
 	public ResponseEntity<?> createInvoice(@RequestParam(value = "poNumber") String poNumber,
@@ -216,7 +238,7 @@ public class InvoiceController {
 		return invoicepage.map(invoiceobject -> new InvoiceDTO(invoiceobject.getId(), invoiceobject.getPoNumber(),
 				invoiceobject.getInvoiceNumber(), invoiceobject.getInvoiceDate(), invoiceobject.getStatus(),
 				invoiceobject.getDeliveryPlant(), invoiceobject.getMobileNumber(), invoiceobject.getEic(),
-				paymentrepo.findByAccountnumber(invoiceobject.getBankaccountno()), invoiceobject.getPaymentType(),
+				paymentrepo.findByInvoiceNumber(invoiceobject.getInvoiceNumber()), invoiceobject.getPaymentType(),
 				invoiceobject.getInvoiceurl(), invoiceobject.getInvoiceAmount()));
 	}
 
@@ -265,7 +287,8 @@ public class InvoiceController {
 			List<Invoice> invoices1 = invoiceRepository.findByInvoiceDateBetween(Fromdate, Todate);
 			invoices = invoices.stream().filter(obj1 -> invoices1.stream()
 					.anyMatch(obj2 -> obj2.getInvoiceNumber().equals(obj1.getInvoiceNumber()))).toList();
-			if(invoices.isEmpty()) return ResponseEntity.ok("");
+			if (invoices.isEmpty())
+				return ResponseEntity.ok("");
 			invoicepage = convertListToPage(invoices, page, size);
 			invoicedtopage = convertInvoicetoInvoiceDTO(invoicepage);
 			invoicedtopage.forEach(System.out::println);
@@ -295,10 +318,11 @@ public class InvoiceController {
 				.distinct().collect(Collectors.toList());
 	}
 
-
 	@PostMapping("/revert")
 	public ResponseEntity<?> revertInvoice(@RequestParam("id") String id,
-			@RequestParam(value = "remarks", required = false) String remarks) {
+			@RequestParam(value = "remarks", required = false) String remarks,
+			@RequestParam(value = "fileinvoice", required = false) MultipartFile fileinvoice,
+			HttpServletRequest request) throws IOException, Exception {
 
 		// Retrieve the invoice from the database using the invoiceId
 		Optional<Invoice> invoiceOptional = invoiceRepository.findById(id);
@@ -308,18 +332,31 @@ public class InvoiceController {
 		Invoice invoice = invoiceOptional.get();
 		// Revert the invoice to the original user and update roleName with username
 		try {
+			String token = request.getHeader("Authorization").replace("Bearer ", "");
+			String username = s3service.getUserNameFromToken(token);
+			// Retrieve the invoice from the database using the invoiceId
+			s3service.createBucket(token, "reverthistory");
+			String url = invoice.getInvoiceurl();
+			if (fileinvoice != null) {
+				url = s3service.uploadFile(fileinvoice, invoice.getInvoiceNumber(), username).getUrl();
+			}
+			InvoicesHistory invhistoryadd = new InvoicesHistory(id, url, "reverted", invoice.getInvoiceNumber(),
+					LocalDate.now(), remarks);
 			invoice.setStatus("reverted");
 
-			// Update remarks if provided
 			if (remarks != null) {
-				// If remarks list is null, create a new ArrayList
 				if (invoice.getRemarks() == null) {
-					invoice.setRemarks(new HashSet<String>());
+					invoice.setRemarks(new HashSet<>());
 				}
-				// Add the new remark to the list
 				invoice.getRemarks().add(remarks);
 			}
-
+			List<InvoicesHistory> inv = invoice.getInvoicehistorylist();
+			if (inv.isEmpty()) {
+				inv = new ArrayList<InvoicesHistory>();
+			}
+			inv.add(invhistoryadd);
+			invoice.setRevertCount(invoice.getRevertCount() + 1);
+			kafkaInvoice.send("reverted", invoice);
 			Invoice revertedInvoice = invoiceRepository.save(invoice);
 			return ResponseEntity.ok(revertedInvoice);
 		} catch (Exception e) {
@@ -329,9 +366,18 @@ public class InvoiceController {
 	}
 
 	@DeleteMapping("/delete")
-	public ResponseEntity<String> deleteInvoice(@RequestParam("id") String id) {
+	public ResponseEntity<String> deleteInvoice(@RequestParam("id") String id,
+			@RequestParam(value = "poNumber") String poNumber) {
 		// Assuming you have a method in your repository to delete an invoice by ID
 		try {
+			Optional<Invoice> invoice = invoiceRepository.findById(id);
+			if (!invoice.isPresent())
+				return ResponseEntity.ok("Not found any Invoice with Reference Id : " + id);
+			PoSummary po = porepo.findByPoNumber(poNumber).get();
+			List<Invoice> invoicelist = po.getInvoiceobject();
+			invoicelist.remove(invoice.get());
+			po.setInvoiceobject(invoicelist);
+			porepo.save(po);
 			invoiceRepository.deleteById(id);
 			return ResponseEntity.ok("Invoice deleted successfully");
 		} catch (Exception e) {
@@ -341,8 +387,12 @@ public class InvoiceController {
 	}
 
 	@PostMapping("/forward")
-	public ResponseEntity<?> forwardInvoice(@RequestParam("id") String id, @RequestParam("roleName") String roleName,
-			@RequestParam("remarks") Set<String> remarks) {
+	public ResponseEntity<?> forwardInvoice(@RequestHeader("id") String id, @RequestParam("remarks") String remarks,
+			@RequestParam(value = "fileinvoice", required = false) MultipartFile fileinvoice,
+			HttpServletRequest request) throws IOException, Exception {
+
+		String token = request.getHeader("Authorization").replace("Bearer ", "");
+		String username = s3service.getUserNameFromToken(token);
 		// Retrieve the invoice from the database using the invoiceId
 		Optional<Invoice> invoiceOptional = invoiceRepository.findById(id);
 
@@ -350,195 +400,126 @@ public class InvoiceController {
 			return ResponseEntity.notFound().build();
 
 		Invoice invoice = invoiceOptional.get();
-
-		// Log the roleName for debugging
-		System.out.println("Role Name: " + roleName);
+		s3service.createBucket(token, "history");
+		String url = invoice.getInvoiceurl();
+		if (fileinvoice != null) {
+			url = s3service.uploadFile(fileinvoice, invoice.getInvoiceNumber(), username).getUrl();
+		}
+		InvoicesHistory invhistoryadd = new InvoicesHistory(id, url, "sent", invoice.getInvoiceNumber(),
+				LocalDate.now(), remarks);
+		invoice.setStatus("sent");
+		kafkaInvoice.send("forwarded", invoice);
 
 		// Update fields based on roleName
-		try {
-			if (roleName.startsWith("vi-")) {
-				invoice.setStatus("pending");
-			} else if (roleName.equalsIgnoreCase("finance") || roleName.equalsIgnoreCase("hr")) {
-				invoice.setStatus("inProgress");
-				System.out.println("HR/Finance Role Detected");
-			} else if (roleName.equalsIgnoreCase("admin") || roleName.equalsIgnoreCase("admin2")) {
-				// Log for debugging
-				System.out.println("Admin Role Detected");
-				// Set specific fields for admin roles
-			}
-			// Append the new remarks to the existing list
-			if (remarks != null) {
-				if (invoice.getRemarks() == null) {
-					invoice.setRemarks(new HashSet<>());
-				}
-				invoice.getRemarks().addAll(remarks);
-			}
-			Invoice updatedInvoice = invoiceRepository.save(invoice);
 
-			return ResponseEntity.ok(updatedInvoice);
-		} catch (Exception e) {
-			e.printStackTrace(); // Log the exception
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error updating invoice");
+		// Append the new remarks to the existing list
+		if (remarks != null) {
+			if (invoice.getRemarks() == null) {
+				invoice.setRemarks(new HashSet<>());
+			}
+			invoice.getRemarks().add(remarks);
 		}
+		List<InvoicesHistory> inv = invoice.getInvoicehistorylist();
+		if (inv.isEmpty()) {
+			inv = new ArrayList<InvoicesHistory>();
+		}
+		inv.add(invhistoryadd);
+		invoice.setSentCount(invoice.getSentCount() + 1);
+		Invoice updatedInvoice = invoiceRepository.save(invoice);
+
+		return ResponseEntity.ok(updatedInvoice);
 	}
 
-	@PostMapping("/forwarding")
-	public ResponseEntity<?> forwardInvoice(@RequestParam("id") String id, @RequestParam("roleName") String roleName,
-			@RequestParam("remarks") List<String> remarks,
-			@RequestParam(value = "file", required = false) MultipartFile invoicefile,
-			@RequestParam(value = "supportingDocument", required = false) MultipartFile supportingDocument) {
-
-		// Retrieve the invoice from the database using the invoiceId
-		Optional<Invoice> invoiceOptional = invoiceRepository.findById(id);
-		if (invoiceOptional.isEmpty()) {
-			return ResponseEntity.notFound().build();
-		}
-
-		Invoice invoice = invoiceOptional.get();
-
-		// Log the roleName for debugging
-		System.out.println("Role Name: " + roleName);
-
-		// Update fields based on roleName
-		try {
-			if (roleName.startsWith("vi-")) {
-				invoice.setStatus("pending");
-			} else if (roleName.equalsIgnoreCase("finance") || roleName.equalsIgnoreCase("hr")) {
-				invoice.setStatus("inProgress");
-				System.out.println("HR/Finance Role Detected");
-			} else if (roleName.equalsIgnoreCase("admin") || roleName.equalsIgnoreCase("admin2")) {
-				// Log for debugging
-				System.out.println("Admin Role Detected");
-
-				// Set specific fields for admin roles
-			}
-
-			// Append the new remarks to the existing list
-			if (remarks != null) {
-				if (invoice.getRemarks() == null) {
-					invoice.setRemarks(new HashSet<>());
-				}
-				invoice.getRemarks().addAll(remarks);
-			}
-
-			// Update the file in the database (modify based on your entity structure)
-			List<DocDetails> newFiles = new ArrayList<>();
-			if (invoicefile != null) {
-				DocDetails FileUploadResponse = s3service.uploadFile(invoicefile,
-						invoiceOptional.get().getInvoiceNumber(), invoiceOptional.get().getUsername());
-				newFiles.add(FileUploadResponse);
-			}
-
-			invoice.getInvoiceFile().addAll(newFiles);
-
-			// Update the supporting document in the database (modify based on your entity
-			// structure)
-			List<DocDetails> newSupportingDocuments = new ArrayList<>();
-			if (supportingDocument != null) {
-				DocDetails DocumentUploadResponse = s3service.uploadFile(supportingDocument,
-						invoiceOptional.get().getInvoiceNumber(), invoiceOptional.get().getUsername());
-				newSupportingDocuments.add(DocumentUploadResponse);
-			}
-
-			// Append the new supporting documents to the existing list in the database
-			// (modify based on your entity structure)
-			invoice.getSupportingDocument().addAll(newSupportingDocuments);
-
-			// Save the updated invoice to the database
-			Invoice updatedInvoice = invoiceRepository.save(invoice);
-
-			return ResponseEntity.ok(updatedInvoice);
-		} catch (Exception e) {
-			e.printStackTrace(); // Log the exception
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error updating invoice");
-		}
-	}
-
-//	@PostMapping("/upload-multiple")
-//	public ResponseEntity<String> uploadFiles(@RequestParam("files") MultipartFile[] files, HttpServletRequest request) {
-//		
-//		String token = request.getHeader("Authorization").replace("Bearer ", "");
-//		String username = getUserNameFromToken(token);
-//		List<String> fileNames = Collections.synchronizedList(new ArrayList<>());
-//		// Convert array into list
-//		List<MultipartFile> fileslist = Arrays.asList(files);
-//		System.err.println(request.getHeader("Authorization"));
+//	@PostMapping("/forwarding")
+//	public ResponseEntity<?> forwardInvoice(@RequestParam("id") String id, @RequestParam("roleName") String roleName,
+//			@RequestParam("remarks") List<String> remarks,
+//			@RequestParam(value = "file", required = false) MultipartFile invoicefile,
+//			@RequestParam(value = "supportingDocument", required = false) MultipartFile supportingDocument) {
 //
-//		fileslist.parallelStream().filter(file -> !file.isEmpty()).map(file -> {
-//			try {
-//				DocumentsMongo document = new DocumentsMongo();
-//				document.setusername(username);
-//				document.setFilename(file.getOriginalFilename());
-//
-//				ResponseEntity<HashMap<String,Object>> url = s3service
-//						.uploadCompliance(token, file,username);
-//				
-//				document.setUrl(url);
-//
-//				if (url.getStatusCodeValue() != 200) {
-//					return ResponseEntity.internalServerError().body("not uploaded successfully!!");
-//				}
-//				documentRepository.save(document);
-//
-//				synchronized (fileNames) {
-//					fileNames.add(file.getOriginalFilename());
-//				}
-//				return ResponseEntity.ok("uploaded successfully!!");
-//			} catch (Exception e) {
-//				e.printStackTrace();
-//				return ResponseEntity.internalServerError().body("not uploaded successfully!!");
-//			}
-//		}).filter(response -> response.getStatusCodeValue() != 200).findAny().ifPresent(response -> {
-//			// Handle the case where at least one file was not uploaded successfully
-//			throw new RuntimeException("At least one file was not uploaded successfully!!");
-//		});
-
-//		fileslist.parallelStream().map(file->{
-//			if(!file.isEmpty())
-//		})
-//		for (MultipartFile file : files) {
-//			if (!file.isEmpty()) {
-//				DocumentsMongo document = new DocumentsMongo();
-//				document.setusername(username);
-//				document.setFilename(file.getOriginalFilename());
-//				ResponseEntity<String> url = s3service
-//						.uploadCompliance(request.getHeader("Authorization").replace("Bearer ", ""), file);
-//				document.setUrl(url.getBody());
-//				if (url.getStatusCodeValue() != 200)
-//					return ResponseEntity.internalServerError().body("not uploaded successfully!!");
-//				documentRepository.save(document);
-//				String fileName = file.getOriginalFilename();
-//				fileNames.add(fileName);
-//			}
+//		// Retrieve the invoice from the database using the invoiceId
+//		Optional<Invoice> invoiceOptional = invoiceRepository.findById(id);
+//		if (invoiceOptional.isEmpty()) {
+//			return ResponseEntity.notFound().build();
 //		}
 //
-//		return ResponseEntity.ok("Files uploaded successfully: " + fileNames);
+//		Invoice invoice = invoiceOptional.get();
+//
+//		// Log the roleName for debugging
+//		System.out.println("Role Name: " + roleName);
+//
+//		// Update fields based on roleName
+//		try {
+//			if (roleName.startsWith("vi-")) {
+//				invoice.setStatus("pending");
+//			} else if (roleName.equalsIgnoreCase("finance") || roleName.equalsIgnoreCase("hr")) {
+//				invoice.setStatus("inProgress");
+//				System.out.println("HR/Finance Role Detected");
+//			} else if (roleName.equalsIgnoreCase("admin") || roleName.equalsIgnoreCase("admin2")) {
+//				// Log for debugging
+//				System.out.println("Admin Role Detected");
+//
+//				// Set specific fields for admin roles
+//			}
+//
+//			// Append the new remarks to the existing list
+//			if (remarks != null) {
+//				if (invoice.getRemarks() == null) {
+//					invoice.setRemarks(new HashSet<>());
+//				}
+//				invoice.getRemarks().addAll(remarks);
+//			}
+//
+//			// Update the file in the database (modify based on your entity structure)
+//			List<DocDetails> newFiles = new ArrayList<>();
+//			if (invoicefile != null) {
+//				DocDetails FileUploadResponse = s3service.uploadFile(invoicefile,
+//						invoiceOptional.get().getInvoiceNumber(), invoiceOptional.get().getUsername());
+//				newFiles.add(FileUploadResponse);
+//			}
+//
+//			invoice.getInvoiceFile().addAll(newFiles);
+//
+//			// Update the supporting document in the database (modify based on your entity
+//			// structure)
+//			List<DocDetails> newSupportingDocuments = new ArrayList<>();
+//			if (supportingDocument != null) {
+//				DocDetails DocumentUploadResponse = s3service.uploadFile(supportingDocument,
+//						invoiceOptional.get().getInvoiceNumber(), invoiceOptional.get().getUsername());
+//				newSupportingDocuments.add(DocumentUploadResponse);
+//			}
+//
+//			// Append the new supporting documents to the existing list in the database
+//			// (modify based on your entity structure)
+//			invoice.getSupportingDocument().addAll(newSupportingDocuments);
+//
+//			// Save the updated invoice to the database
+//			Invoice updatedInvoice = invoiceRepository.save(invoice);
+//
+//			return ResponseEntity.ok(updatedInvoice);
+//		} catch (Exception e) {
+//			e.printStackTrace(); // Log the exception
+//			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error updating invoice");
+//		}
 //	}
 
 	@GetMapping("getInvoiceCount")
-	public ResponseEntity<Map<String, Long>> getInvoiceCount(@RequestParam(value = "username") String username,
+	public ResponseEntity<Map<String, Long>> getInvoiceCount(
 			@RequestHeader(value = "pageNumber", defaultValue = "0", required = false) int page,
-			@RequestHeader(value = "pageSize", defaultValue = "10", required = false) int size) {
+			@RequestHeader(value = "pageSize", defaultValue = "10", required = false) int size,
+			HttpServletRequest request) {
+
+		String token = request.getHeader("Authorization").replace("Bearer ", "");
+		String username = s3service.getUserNameFromToken(token);
 		Page<InvoiceDTO> invoicesByUsername = convertInvoicetoInvoiceDTO(
 				convertListToPage(invoiceRepository.findByUsername(username), page, size));
 		long invoiceCountByUsername = invoicesByUsername.getTotalElements();
-
 		// Calculate inbox count based on username and status "reverted"
 		long inboxCountReverted = invoiceRepository.countByUsernameAndStatus(username, "reverted");
-
 		Map<String, Long> response = new HashMap<>();
-		response.put("invoiceCount", invoiceCountByUsername);
+		response.put("InvoiceCountTotalof_" + username, invoiceCountByUsername);
 		response.put("inboxCount", inboxCountReverted);
 
 		return ResponseEntity.status(HttpStatus.OK).body(response);
-	}
-
-	public Page<Invoice> convertListToPage(List<Invoice> invoiceList, int page, int size) {
-		Pageable pageable = PageRequest.of(page, size);
-		int start = Math.min((int) pageable.getOffset(), invoiceList.size());
-		int end = Math.min((start + pageable.getPageSize()), invoiceList.size());
-		List<Invoice> subList = invoiceList.subList(start, end);
-		return new PageImpl<>(subList, pageable, invoiceList.size());
 	}
 
 	@GetMapping("getData")
@@ -667,7 +648,6 @@ public class InvoiceController {
 
 		long numInvoices = invoices.getTotalElements();
 		long inprogressInvoices = invoices.getTotalElements(); // This seems to be a placeholder; adjust logic if
-																// needed.
 
 		Map<String, Object> response = new HashMap<>();
 		response.put("numInvoices", numInvoices);
@@ -678,13 +658,15 @@ public class InvoiceController {
 			Map<String, Object> modifiedInvoice = new HashMap<>();
 			modifiedInvoice.put("invoiceNumber", invoice.getInvoiceNumber()); // Add the MongoDB object ID
 			modifiedInvoice.put("deliveryPlant", invoice.getDeliveryPlant());
-//			modifiedInvoice.put("remarks", invoice.getRemarks());
+			modifiedInvoice.put("url", invoice.getInvoiceurl());
 			modifiedInvoice.put("poNumber", invoice.getPoNumber());
 			modifiedInvoice.put("status", invoice.getStatus());
 			modifiedInvoice.put("invoiceDate", invoice.getInvoiceDate());
+			modifiedInvoice.put("payment details", invoice.getPaymentdetails());
 			System.out.println("Invoice ID: " + invoice.getInvoiceNumber());
 			System.out.println("Status: " + invoice.getStatus());
 			System.out.println("InvoiceDate: " + invoice.getInvoiceDate());
+			System.out.println("Payment Details: " + invoice.getPaymentdetails());
 			modifiedInvoices.add(modifiedInvoice);
 		}
 
@@ -693,59 +675,13 @@ public class InvoiceController {
 		return ResponseEntity.status(HttpStatus.OK).body(response);
 	}
 
-	@PutMapping("/updateInvoice")
-	public ResponseEntity<?> updateInvoice(@RequestHeader("remarks") Set<String> remarks,
-			@RequestHeader("id") String invoiceId) {
-		Optional<Invoice> invoiceOptional = invoiceRepository.findById(invoiceId);
-		if (invoiceOptional.isEmpty() || !invoiceOptional.isPresent())
-			return ResponseEntity.badRequest().body("invoice with this id does not exist");
-		Invoice invoice = invoiceOptional.get();
-		Set<String> existingremarks = invoice.getRemarks();
-		if (existingremarks == null || existingremarks.isEmpty()) {
-			existingremarks = new HashSet<String>();
-		}
-		existingremarks.addAll(remarks);
-		invoice.setRemarks(existingremarks);
-		invoiceRepository.save(invoice);
-		return ResponseEntity.ok(invoice);
-	}
-
 	@GetMapping("/getAllInvoices")
 	public ResponseEntity<?> getAllInvoices(@RequestParam(defaultValue = "0", required = false) int page,
 			@RequestParam(defaultValue = "10", required = false) int size) {
 		Pageable pageable = PageRequest.of(page, size, Sort.by("invoicedate").descending());
-
 		Page<Invoice> invoicepage = invoiceRepository.findAll(pageable);
 		Page<InvoiceDTO> invoicedtopage = convertInvoicetoInvoiceDTO(invoicepage);
 		return ResponseEntity.ok(invoicedtopage);
-	}
-
-	@GetMapping("getInvoice")
-	public ResponseEntity<?> getInvoicesBypoNumber(@RequestParam(value = "poNumber") String poNumber,
-			@RequestHeader(value = "pageNumber", defaultValue = "0", required = false) int page,
-			@RequestHeader(value = "pageSize", defaultValue = "10", required = false) int size) {
-		Pageable pageable = PageRequest.of(page, size);
-		System.err.println("get PO");
-		Page<InvoiceDTO> invoice1 = invoiceRepository.findByPoNumber(poNumber, pageable);
-
-//		if (!invoice1.isPresent())
-//			return ResponseEntity.ok(HttpStatus.NOT_FOUND);
-//
-//		Invoice invoice = invoice1.get();
-//		InvoiceDTO invoiceDTO = new InvoiceDTO();
-//
-//		invoiceDTO.setRoleName(invoice.getRoleName());
-//		invoiceDTO.setEic(invoice.getEic());
-//		invoiceDTO.setDeliveryPlant(invoice.getDeliveryPlant());
-//		invoiceDTO.setMobileNumber(invoice.getMobileNumber());
-//		invoiceDTO.setEmail(invoice.getEmail());
-//		invoiceDTO.setPaymentType(invoice.getPaymentType());
-//		invoiceDTO.setType(invoice.getType());
-//		invoiceDTO.setMsmeCategory(invoice.getMsmeCategory());
-//
-//		System.out.println("::GET " + invoiceDTO);
-
-		return ResponseEntity.status(HttpStatus.OK).body(invoice1);
 	}
 
 	@PostMapping("/updateClaimedStatus")
@@ -764,7 +700,8 @@ public class InvoiceController {
 //	@GetMapping("/getInboxData")
 //	public ResponseEntity<Page<InvoiceDTO>> getAllInvoices(@RequestHeader("roleName") String roleName,
 //			@RequestHeader(value = "pageNumber",defaultValue = "0",required = false) int page,
-//			@RequestHeader(value = "pageSize",defaultValue = "10",required = false) int size) {
+//			@RequestHeader(value = "pag
+//	eSize",defaultValue = "10",required = false) int size) {
 //		Pageable pageable = PageRequest.of(page, size);
 //		Page<InvoiceDTO> invoicedtopage;
 //
@@ -798,6 +735,7 @@ public class InvoiceController {
 			return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
 		}
 	}
+
 //
 //	@GetMapping("/getClaimedInbox")
 //	public ResponseEntity<Page<InvoiceDTO>> getAllInvoices(@RequestHeader(required = false) Boolean claimed,
@@ -820,5 +758,12 @@ public class InvoiceController {
 //			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
 //		}
 //	}
+	public Page<Invoice> convertListToPage(List<Invoice> invoiceList, int page, int size) {
+		Pageable pageable = PageRequest.of(page, size);
+		int start = Math.min((int) pageable.getOffset(), invoiceList.size());
+		int end = Math.min((start + pageable.getPageSize()), invoiceList.size());
+		List<Invoice> subList = invoiceList.subList(start, end);
+		return new PageImpl<>(subList, pageable, invoiceList.size());
+	}
 
 }

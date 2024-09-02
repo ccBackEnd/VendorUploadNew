@@ -33,13 +33,13 @@ public class PoSummary {
 	private LocalDate deliveryDate;
 	private String poStatus;
 	private String poAmount;
-	private int noOfInvoices;
 	private String deliveryTimelines;
 	private Set<String> deliveryPlant;
 	private String eic;
 	private String receiver;
 	// private List<String> supportingDocument;
 	private List<Invoice> invoiceobject;
+	private int noOfInvoices;
 	private String username;
 	private String type;
 	private String url;

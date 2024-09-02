@@ -22,4 +22,5 @@ public class RecieverDetails {
     private String recieverEmail;
     private String recieverPhoneNumber;
     private String recieverpaymentType;
+	private AddressVendorUser recieveraddress;
 }

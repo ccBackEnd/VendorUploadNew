@@ -158,15 +158,17 @@ public class POController {
 	public ResponseEntity<?> getPurchaseOrder(@RequestParam(value = "poNumber") String ponumber) {
 		System.out.println("Getting Purchase Order");
 		Optional<PoSummary> po = porepo.findByPoNumber(ponumber);
-		if (po == null)
+		if (!po.isPresent())
 			return ResponseEntity.ok(HttpStatus.NOT_FOUND);
+		
 		PoDTO podto = new PoDTO(po.get().getId(), po.get().getPoNumber(), po.get().getDescription(),
 				po.get().getPoIssueDate(), po.get().getDeliveryDate(), po.get().getPoStatus(), po.get().getPoAmount(),
 				po.get().getNoOfInvoices(), po.get().getDeliveryTimelines(), po.get().getDeliveryPlant(),
-				po.get().getEic(), po.get().getReceiver(), po.get().getUrl());
+				po.get().getEic(), po.get().getReceiver(), po.get().getUrl(),po.get().getInvoiceobject());
 		return ResponseEntity.ok(podto);
 
 	}
+	
 
 	@GetMapping("/getAllRoles")
 	public List<String> getAllRoles() {
@@ -246,11 +248,12 @@ public class POController {
 	private Page<PoDTO> convertPoAsPODTO(Page<PoSummary> purchaseorderpage) {
 		return purchaseorderpage.map(po -> new PoDTO(po.getId(), po.getPoNumber(), po.getDescription(),
 				po.getPoIssueDate(), po.getDeliveryDate(), po.getPoStatus(), po.getPoAmount(), po.getNoOfInvoices(),
-				po.getDeliveryTimelines(), po.getDeliveryPlant(), po.getEic(), po.getReceiver(), po.getUrl()));
+				po.getDeliveryTimelines(), po.getDeliveryPlant(), po.getEic(), po.getReceiver(), po.getUrl(),
+				po.getInvoiceobject()));
 	}
 
 	private Page<PoSummary> convertListToPage(List<PoSummary> purchaseorders, int page, int size) {
-		Pageable pageable = PageRequest.of(page, size,Sort.by("poIssueDate").descending());
+		Pageable pageable = PageRequest.of(page, size, Sort.by("poIssueDate").descending());
 		int start = Math.min((int) pageable.getOffset(), purchaseorders.size());
 		int end = Math.min((start + pageable.getPageSize()), purchaseorders.size());
 		List<PoSummary> subList = purchaseorders.subList(start, end);

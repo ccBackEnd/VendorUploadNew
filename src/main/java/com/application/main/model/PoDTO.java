@@ -1,6 +1,7 @@
 package com.application.main.model;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
 
 import org.springframework.data.annotation.Id;
@@ -23,6 +24,7 @@ public class PoDTO {
 	private int noOfInvoices;
 	private String deliveryTimelines;
 	private Set<String> deliveryPlant;
+	private List<Invoice> invoiceobject;
 	private String eic;
 	private String receiver;
 	private String url;
@@ -125,7 +127,7 @@ public class PoDTO {
 
 	public PoDTO(String id , String poNumber, String description, LocalDate poIssueDate, LocalDate deliveryDate, String poStatus,
 			String poAmount, int noOfInvoices, String deliveryTimelines, Set<String> deliveryPlant,
-			String eic, String receiver,String savedurl) {
+			String eic, String receiver,String savedurl , List<Invoice> invoiceobject) {
 		super();
 		this.id = id;
 		this.poNumber = poNumber;
@@ -136,6 +138,7 @@ public class PoDTO {
 		this.poAmount = poAmount;
 		this.noOfInvoices = noOfInvoices;
 		this.deliveryTimelines = deliveryTimelines;
+		this.invoiceobject = invoiceobject;
 		this.deliveryPlant = deliveryPlant;
 		this.eic = eic;
 		this.receiver = receiver;
@@ -149,6 +152,14 @@ public class PoDTO {
 
 	public void setUrl(String url) {
 		this.url = url;
+	}
+
+	public List<Invoice> getInvoiceobject() {
+		return invoiceobject;
+	}
+
+	public void setInvoiceobject(List<Invoice> invoiceobject) {
+		this.invoiceobject = invoiceobject;
 	}
 
 }

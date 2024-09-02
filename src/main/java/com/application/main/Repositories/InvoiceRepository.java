@@ -22,7 +22,6 @@ public interface InvoiceRepository extends MongoRepository<Invoice, String> {
 //	Invoice findBypoNumber(String poNumber);
 	Page<InvoiceDTO> findByPoNumber(String poNumber,Pageable pageable);
 	List<Invoice> findByUsername(String username);
-	Optional<Invoice> findById(String id);
 	List<Invoice> findByUsernameAndStatus(String username,String status);
 	List<Invoice> findByInvoiceDateBetween(LocalDate invoiceDate1,LocalDate invDate2);
 

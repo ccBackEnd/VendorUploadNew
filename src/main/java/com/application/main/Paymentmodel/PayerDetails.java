@@ -19,9 +19,11 @@ public class PayerDetails {
 
 	private String payerName;
 	private String accountnumber;
+	private String accounttype;
 	private String ifsccode;
 	private String payerEmail;
 	private String payerPhoneNumber;
 	private String payerpaymentType;
+	private AddressVendorUser payeraddress;
 
 }
