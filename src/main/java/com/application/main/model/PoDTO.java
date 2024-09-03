@@ -1,8 +1,6 @@
 package com.application.main.model;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 import org.springframework.data.annotation.Id;
@@ -25,7 +23,6 @@ public class PoDTO {
 	private int noOfInvoices;
 	private String deliveryTimelines;
 	private Set<String> deliveryPlant;
-	private List<Invoice> invoiceobject;
 	private String eic;
 	private String receiver;
 	private String url;
@@ -128,7 +125,7 @@ public class PoDTO {
 
 	public PoDTO(String id , String poNumber, String description, LocalDate poIssueDate, LocalDate deliveryDate, String poStatus,
 			String poAmount, int noOfInvoices, String deliveryTimelines, Set<String> deliveryPlant,
-			String eic, String receiver,String savedurl , List<Invoice> invoiceobject) {
+			String eic, String receiver,String savedurl ) {
 		super();
 		this.id = id;
 		this.poNumber = poNumber;
@@ -139,8 +136,7 @@ public class PoDTO {
 		this.poAmount = poAmount;
 		this.noOfInvoices = noOfInvoices;
 		this.deliveryTimelines = deliveryTimelines;
-		if(invoiceobject==null) this.invoiceobject = new ArrayList<>();
-		else this.invoiceobject = invoiceobject;
+		
 		this.deliveryPlant = deliveryPlant;
 		this.eic = eic;
 		this.receiver = receiver;
@@ -156,20 +152,13 @@ public class PoDTO {
 		this.url = url;
 	}
 
-	public List<Invoice> getInvoiceobject() {
-		return invoiceobject;
-	}
-
-	public void setInvoiceobject(List<Invoice> invoiceobject) {
-		this.invoiceobject = invoiceobject;
-	}
 
 	@Override
 	public String toString() {
 		return "PoDTO [id=" + id + ", poNumber=" + poNumber + ", description=" + description + ", poIssueDate="
 				+ poIssueDate + ", deliveryDate=" + deliveryDate + ", poStatus=" + poStatus + ", poAmount=" + poAmount
 				+ ", noOfInvoices=" + noOfInvoices + ", deliveryTimelines=" + deliveryTimelines + ", deliveryPlant="
-				+ deliveryPlant + ", invoiceobject=" + invoiceobject + ", eic=" + eic + ", receiver=" + receiver
+				+ deliveryPlant + ", eic=" + eic + ", receiver=" + receiver
 				+ ", url=" + url + "]";
 	}
 	

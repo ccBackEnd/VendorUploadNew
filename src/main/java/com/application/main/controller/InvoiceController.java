@@ -75,7 +75,6 @@ public class InvoiceController {
 	private final MongoTemplate mongoTemplate;
 	DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-
 	@Autowired
 	VendorUserRepository vendoruserrepo;
 
@@ -138,7 +137,7 @@ public class InvoiceController {
 			@RequestParam(value = "sellerGst", required = false) String sellerGst,
 			@RequestParam(value = "buyerGst", required = false) String buyerGst,
 			@RequestParam(value = "bankaccountno", required = false) String bankaccountno,
-			@RequestParam("file") MultipartFile invoiceFile,
+			@RequestParam(value = "file") MultipartFile invoiceFile,
 			@RequestParam(name = "supportingDocument", required = false) List<MultipartFile> supportingDocument,
 			HttpServletRequest request) throws Exception {
 
@@ -146,16 +145,18 @@ public class InvoiceController {
 			return ResponseEntity.ok("Invoice with Number " + invoiceNumber + " Already Exists");
 		String token = request.getHeader("Authorization").replace("Bearer ", "");
 		String username = s3service.getUserNameFromToken(token);
-
+		System.out.println(
+				"---------------Invoice is Uploading into Database !!!--------------------------------  " + username);
 		s3service.createBucket(token, username);
-		DocDetails InvoiceuploadResponse = s3service.uploadFile(invoiceFile, invoiceNumber, username);
+		DocDetails InvoiceuploadResponse = s3service.uploadFile(token, invoiceFile, invoiceNumber, username);
 		List<DocDetails> suppDocNameList = new ArrayList<>();
 
+		System.out.println("---------------------------------------UPLOADING------------------------------");
 		if (supportingDocument != null) {
 			supportingDocument.forEach(document -> {
 				try {
 					int i = 0;
-					DocDetails documentUploadObject = s3service.uploadFile(document,
+					DocDetails documentUploadObject = s3service.uploadFile(token, document,
 							invoiceNumber.concat("SDoc" + String.valueOf(i++)), username);
 					suppDocNameList.add(documentUploadObject);
 				} catch (Exception e) {
@@ -165,12 +166,15 @@ public class InvoiceController {
 			});
 		}
 
+		System.out.println("----------------------------------");
 		String msmecategory = porepo.findByPoNumber(poNumber).get().getMsmecategoy();
+		System.out.println("----------------------------------");
 		Map<String, Object> uploadMongoFile = s3service.uploadMongoFile(username, msmecategory, poNumber, paymentType,
 				deliveryPlant, invoiceDate, invoiceNumber, invoiceAmount, mobileNumber, email, alternateMobileNumber,
 				alternateEmail, remarks, ses, isagainstLC, isGst, isTredExchangePayment, factoryunitnumber,
 				isMDCCPayment, mdccnumber, sellerGst, buyerGst, bankaccountno, InvoiceuploadResponse, suppDocNameList);
-		if (uploadMongoFile == null) return ResponseEntity.ok(HttpStatus.METHOD_FAILURE);
+		if (uploadMongoFile == null)
+			return ResponseEntity.ok(HttpStatus.METHOD_FAILURE);
 		return ResponseEntity.ok(uploadMongoFile).ok(HttpStatus.OK)
 				.ok("Invoice Successfully Uploaded with referenced PO");
 	}
@@ -250,9 +254,9 @@ public class InvoiceController {
 		List<Invoice> invoices = null;
 		try {
 			Criteria criteria = new Criteria().where("username").is(username);
-			if(!invoiceStatus.equalsIgnoreCase("All")) {
-			Pattern inc = Pattern.compile(invoiceStatus, Pattern.CASE_INSENSITIVE);
-			criteria = new Criteria().where("status").regex(inc).and("username").is(username);
+			if (!invoiceStatus.equalsIgnoreCase("All")) {
+				Pattern inc = Pattern.compile(invoiceStatus, Pattern.CASE_INSENSITIVE);
+				criteria = new Criteria().where("status").regex(inc).and("username").is(username);
 			}
 
 			if (searchItems != null && !searchItems.isEmpty()) {
@@ -271,7 +275,8 @@ public class InvoiceController {
 								Criteria.where("msmeCategory").regex(searchItems)));
 			}
 			invoices = mongoTemplate.find(Query.query(criteria), Invoice.class);
-			List<Invoice> invoices1 = invoiceRepository.findByInvoiceDateBetween(LocalDate.parse(fromdate, formatter), LocalDate.parse(todate, formatter));
+			List<Invoice> invoices1 = invoiceRepository.findByInvoiceDateBetween(LocalDate.parse(fromdate, formatter),
+					LocalDate.parse(todate, formatter));
 			invoices = invoices.stream().filter(obj1 -> invoices1.stream()
 					.anyMatch(obj2 -> obj2.getInvoiceNumber().equals(obj1.getInvoiceNumber()))).toList();
 			invoicepage = convertListToPage(invoices, page, size);
@@ -322,7 +327,7 @@ public class InvoiceController {
 			s3service.createBucket(token, "reverthistory");
 			String url = invoice.getInvoiceurl();
 			if (fileinvoice != null) {
-				url = s3service.uploadFile(fileinvoice, invoice.getInvoiceNumber(), username).getUrl();
+				url = s3service.uploadFile(token, fileinvoice, invoice.getInvoiceNumber(), username).getUrl();
 			}
 			InvoicesHistory invhistoryadd = new InvoicesHistory(id, url, "reverted", invoice.getInvoiceNumber(),
 					LocalDate.now(), remarks);
@@ -387,7 +392,7 @@ public class InvoiceController {
 		s3service.createBucket(token, "history");
 		String url = invoice.getInvoiceurl();
 		if (fileinvoice != null) {
-			url = s3service.uploadFile(fileinvoice, invoice.getInvoiceNumber(), username).getUrl();
+			url = s3service.uploadFile(token, fileinvoice, invoice.getInvoiceNumber(), username).getUrl();
 		}
 		InvoicesHistory invhistoryadd = new InvoicesHistory(id, url, "sent", invoice.getInvoiceNumber(),
 				LocalDate.now(), remarks);
@@ -748,6 +753,17 @@ public class InvoiceController {
 		int end = Math.min((start + pageable.getPageSize()), invoiceList.size());
 		List<Invoice> subList = invoiceList.subList(start, end);
 		return new PageImpl<>(subList, pageable, invoiceList.size());
+	}
+
+	public List<InvoiceDTO> convertInvoicetoInvoiceDTOList(List<Invoice> invoicelist) {
+
+		List<InvoiceDTO> ivdto = new ArrayList<>();
+		for (Invoice iv : invoicelist) {
+			ivdto.add(new InvoiceDTO(iv.getId(), iv.getPoNumber(), iv.getInvoiceNumber(), iv.getInvoiceDate(), iv.getStatus(),
+					iv.getDeliveryPlant(), iv.getMobileNumber(), iv.getEic(), paymentrepo.findByInvoiceNumber(iv.getInvoiceNumber()), iv.getPaymentType(), iv.getInvoiceurl(), iv.getInvoiceAmount()));
+		}
+		return ivdto;
+
 	}
 
 }

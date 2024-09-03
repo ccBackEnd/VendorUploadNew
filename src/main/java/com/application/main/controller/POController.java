@@ -3,6 +3,7 @@ package com.application.main.controller;
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
@@ -14,7 +15,6 @@ import java.util.stream.Stream;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import javax.sound.midi.SysexMessage;
 
 import org.apache.poi.util.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +40,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.application.main.Paymentmodel.PaymentDetailsRepository;
 import com.application.main.Repositories.DocDetailsRepository;
 import com.application.main.Repositories.InvoiceRepository;
 import com.application.main.Repositories.PoSummaryRepository;
@@ -48,6 +49,8 @@ import com.application.main.URLCredentialModel.CipherEncDec;
 import com.application.main.URLCredentialModel.DocDetails;
 import com.application.main.awsconfig.AWSClientConfigService;
 import com.application.main.awsconfig.AwsService;
+import com.application.main.model.Invoice;
+import com.application.main.model.InvoiceDTO;
 import com.application.main.model.PoDTO;
 import com.application.main.model.PoSummary;
 
@@ -59,6 +62,9 @@ public class POController {
 
 	@Autowired
 	PoSummaryRepository porepo;
+	
+	@Autowired
+	PaymentDetailsRepository paymentrepo;
 
 	@Autowired
 	AwsService s3service;
@@ -120,7 +126,7 @@ public class POController {
 		try {
 			LocalDate issuedt = LocalDate.parse(poIssueDate, formatter);
 			LocalDate delt = LocalDate.parse(deliveryDate, formatter);
-			DocDetails PoUploadObject = s3service.uploadFile(filePO, poNumber, "");
+			DocDetails PoUploadObject = s3service.uploadFile(token,filePO, poNumber, "");
 //			DocDetails doc = new DocDetails(filePO.getOriginalFilename(), poNumber, PoUploadObject.get("generatedURL").toString(),(SecretKey) PoUploadObject.get("secretkey"));
 
 			PoSummary ps = new PoSummary(poStatus, poNumber, description, issuedt, delt, deliveryPlant,
@@ -160,7 +166,7 @@ public class POController {
 		PoDTO podto = new PoDTO(po.get().getId(), po.get().getPoNumber(), po.get().getDescription(),
 				po.get().getPoIssueDate(), po.get().getDeliveryDate(), po.get().getPoStatus(), po.get().getPoAmount(),
 				po.get().getNoOfInvoices(), po.get().getDeliveryTimelines(), po.get().getDeliveryPlant(),
-				po.get().getEic(), po.get().getReceiver(), po.get().getUrl(),po.get().getInvoiceobject());
+				po.get().getEic(), po.get().getReceiver(), po.get().getUrl());
 		return ResponseEntity.ok(podto);
 
 	}
@@ -182,9 +188,27 @@ public class POController {
 //			return ResponseEntity.notFound().build();
 //		}
 //	}
+	
+	@GetMapping("/poSummary/invoiceagainstpo")
+	public List<InvoiceDTO> getInvoices(
+			@RequestParam(value = "poNumber") String poNumber){
+		List<Invoice> invoicelist = porepo.findByPoNumber(poNumber).get().getInvoiceobject();
+		return convertInvoicetoInvoiceDTOList(invoicelist) ;
+		
+	}
+	public List<InvoiceDTO> convertInvoicetoInvoiceDTOList(List<Invoice> invoicelist) {
+
+		List<InvoiceDTO> ivdto = new ArrayList<>();
+		for (Invoice iv : invoicelist) {
+			ivdto.add(new InvoiceDTO(iv.getId(), iv.getPoNumber(), iv.getInvoiceNumber(), iv.getInvoiceDate(), iv.getStatus(),
+					iv.getDeliveryPlant(), iv.getMobileNumber(), iv.getEic(), paymentrepo.findByInvoiceNumber(iv.getInvoiceNumber()), iv.getPaymentType(), iv.getInvoiceurl(), iv.getInvoiceAmount()));
+		}
+		return ivdto;
+
+	}
 
 	@GetMapping("/poSummary/getSummary")
-	public List<PoSummary> searchInvoices(@RequestHeader(value = "Filterby", required = false) String poStatus,
+	public Page<PoDTO> searchPO(@RequestHeader(value = "Filterby", required = false) String poStatus,
 			@RequestHeader(value = "Fromdate") String fromdate, @RequestHeader(value = "Todate") String todate,
 			@RequestHeader(value = "Search", required = false) String searchItems,
 			@RequestHeader(value = "Username", required = true) String username,
@@ -221,14 +245,14 @@ public class POController {
 			purchaseorders = purchaseorders.stream().filter(obj1 -> purchaseordersbydate.stream()
 					.anyMatch(obj2 -> obj2.getPoNumber().equals(obj1.getPoNumber()))).toList();
 			System.out.println("-$$$$$$$$$$$$$$$$$$$---------PRINTING LIST FILTERED -----------$$$$$$$$$$$$$$----");
-			return purchaseorders;
-//			purchaseorders.forEach(System.out::println);
-//			purchaseorderpage = convertListToPage(purchaseorders, page, size);
-//			System.out.println("---------After List to Page---------");
-//			poDTOpage = convertPoAsPODTO(purchaseorderpage);
-//			System.out.println("---------After Page to PO DTO---------");
-//			poDTOpage.getContent().forEach(System.out::println);
-//			return poDTOpage;
+			
+			purchaseorders.forEach(System.out::println);
+			purchaseorderpage = convertListToPage(purchaseorders, page, size);
+			System.out.println("---------After List to Page---------");
+			poDTOpage = convertPoAsPODTO(purchaseorderpage);
+			System.out.println("---------After Page to PO DTO---------");
+			poDTOpage.getContent().forEach(System.out::println);
+			return poDTOpage;
 		} catch (Exception e) {
 			System.out.println("---------Exception ---------0 "+e.getMessage() );
 			e.printStackTrace();
@@ -245,8 +269,7 @@ public class POController {
 		System.out.println("---------------------------------------------PAGE IS NOT NULL------------------------------------");
 		Page<PoDTO> pagepodto = purchaseorderpage.map(po -> new PoDTO(po.getId(), po.getPoNumber(), po.getDescription(),
 				po.getPoIssueDate(), po.getDeliveryDate(), po.getPoStatus(), po.getPoAmount(), po.getNoOfInvoices(),
-				po.getDeliveryTimelines(), po.getDeliveryPlant(), po.getEic(), po.getReceiver(), po.getUrl(),
-				po.getInvoiceobject()));
+				po.getDeliveryTimelines(), po.getDeliveryPlant(), po.getEic(), po.getReceiver(), po.getUrl()));
 		System.out.println("---------------------------------------------PRINTING PAGE PODTO CONTENTS AS LIST-----------------------------------");
 		pagepodto.getContent().forEach(System.out::println);
 		System.out.println("---------------------------------------------CONVERTED SUCCESSFULLY------------------------------------");

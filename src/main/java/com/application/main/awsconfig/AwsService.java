@@ -46,7 +46,6 @@ public class AwsService {
 	private String minioUrl;
 	@Autowired
 	private AWSClientConfigService s3client;
-	private String token;
 	DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 	@Autowired
 	InvoiceRepository invoicerepository;
@@ -62,11 +61,11 @@ public class AwsService {
 
 	public void createBucket(String token, String folderappend) {
 		this.bucketName = "vendorportalfiles" + folderappend;
-		this.token = token;
 		try {
 			AmazonS3 awsClient = s3client.awsClientConfiguration(token);
 			if (!awsClient.doesBucketExistV2(bucketName))
 				awsClient.createBucket(bucketName);
+			System.out.println("----------BUCKET CREATED---------");
 		} catch (AmazonS3Exception e) {
 			System.out.println("CREATE BUCKET EXCEPTION");
 			System.err.println(e.getErrorMessage());
@@ -95,18 +94,27 @@ public class AwsService {
 		return fieldValue;
 	}
 
-	public DocDetails uploadFile(MultipartFile file, String Invoiceid, String username) throws IOException, Exception {
+	public DocDetails uploadFile(String token , MultipartFile file, String id, String username) throws IOException, Exception {
 
+		System.err.println("#################################");
 		System.out.println("token from AWS Service : " + token);
 		
-		String fileName = Invoiceid.concat("?#" + file.getOriginalFilename());
-		
+		String fileName = id.concat("?#" + file.getOriginalFilename());
 		AmazonS3 awsClient = s3client.awsClientConfiguration(token);
-		if (file == null || file.isEmpty())
+		
+		System.err.println(awsClient.getRegion());
+		System.err.println("#################################");
+		
+		if (file == null || file.isEmpty()) {
+			System.out.println("File is null");
 			throw new ResponseStatusException(HttpStatus.SC_METHOD_FAILURE, "Null or Empty file not Accepted", null);
+		}
 		if (awsClient.doesObjectExist(bucketName, fileName)) {
 			System.err.println("FILE WITH " + file.getOriginalFilename() + " Already Exists !");
 		}
+		
+		System.out.println("UPLOADIN FILES ................");
+		
 		PutObjectResult res = awsClient.putObject(bucketName, fileName, file.getInputStream(), new ObjectMetadata());
 		String invoiceFileUrl = bucketName + "XCIDHK2788k99BBSEEL99" + fileName;
 
@@ -118,7 +126,7 @@ public class AwsService {
 		response.put("fileName", file.getOriginalFilename());
 		response.put("generatedURL", invoiceFileUrl);
 
-		DocDetails newdoc = new DocDetails(fileName, Invoiceid, invoiceFileUrl, EncodedSecretKey);
+		DocDetails newdoc = new DocDetails(fileName, id, invoiceFileUrl, EncodedSecretKey);
 
 //		awsClient.getObject(bucketName, fileName);
 		System.err.println("---------- Upload Response Object START ------------");
