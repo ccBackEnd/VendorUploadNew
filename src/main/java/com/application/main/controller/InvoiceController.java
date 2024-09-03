@@ -28,7 +28,6 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -38,7 +37,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.application.main.Paymentmodel.PaymentDetailsRepository;
 import com.application.main.Repositories.DocDetailsRepository;
-import com.application.main.Repositories.DocumentRepository;
 import com.application.main.Repositories.InvoiceHistoryRepository;
 import com.application.main.Repositories.InvoiceRepository;
 import com.application.main.Repositories.PoSummaryRepository;
@@ -75,9 +73,8 @@ public class InvoiceController {
 	private KafkaTemplate<String, Invoice> kafkaInvoice;
 
 	private final MongoTemplate mongoTemplate;
+	DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-	@Autowired
-	DocumentRepository documentRepository;
 
 	@Autowired
 	VendorUserRepository vendoruserrepo;
@@ -173,8 +170,7 @@ public class InvoiceController {
 				deliveryPlant, invoiceDate, invoiceNumber, invoiceAmount, mobileNumber, email, alternateMobileNumber,
 				alternateEmail, remarks, ses, isagainstLC, isGst, isTredExchangePayment, factoryunitnumber,
 				isMDCCPayment, mdccnumber, sellerGst, buyerGst, bankaccountno, InvoiceuploadResponse, suppDocNameList);
-		if (uploadMongoFile == null)
-			return ResponseEntity.ok(HttpStatus.METHOD_FAILURE);
+		if (uploadMongoFile == null) return ResponseEntity.ok(HttpStatus.METHOD_FAILURE);
 		return ResponseEntity.ok(uploadMongoFile).ok(HttpStatus.OK)
 				.ok("Invoice Successfully Uploaded with referenced PO");
 	}
@@ -254,15 +250,14 @@ public class InvoiceController {
 		List<Invoice> invoices = null;
 		try {
 			Criteria criteria = new Criteria().where("username").is(username);
+			if(!invoiceStatus.equalsIgnoreCase("All")) {
 			Pattern inc = Pattern.compile(invoiceStatus, Pattern.CASE_INSENSITIVE);
-			Criteria searchedcriteria = new Criteria().where("status").regex(inc);
-
-			if (invoiceStatus == null || invoiceStatus.equalsIgnoreCase("All")) {
-				invoices = invoiceRepository.findByUsername(username);
+			criteria = new Criteria().where("status").regex(inc).and("username").is(username);
 			}
+
 			if (searchItems != null && !searchItems.isEmpty()) {
 				System.out.println(searchItems);
-				searchedcriteria = new Criteria().andOperator(new Criteria().where("username").is(username),
+				criteria = new Criteria().andOperator(criteria,
 						new Criteria().orOperator(Criteria.where("poNumber").regex(searchItems),
 								Criteria.where("invoiceNumber").regex(searchItems),
 								Criteria.where("status").regex(searchItems),
@@ -275,25 +270,14 @@ public class InvoiceController {
 								Criteria.where("docId").regex(searchItems), Criteria.where("eic").regex(searchItems),
 								Criteria.where("msmeCategory").regex(searchItems)));
 			}
-
-			if (!invoiceStatus.equalsIgnoreCase("All")) {
-				criteria = criteria.andOperator(searchedcriteria, new Criteria().where("status").regex(inc));
-			}
 			invoices = mongoTemplate.find(Query.query(criteria), Invoice.class);
-			System.out.println(invoices);
-			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-			LocalDate Fromdate = LocalDate.parse(fromdate, formatter);
-			LocalDate Todate = LocalDate.parse(todate, formatter);
-			List<Invoice> invoices1 = invoiceRepository.findByInvoiceDateBetween(Fromdate, Todate);
+			List<Invoice> invoices1 = invoiceRepository.findByInvoiceDateBetween(LocalDate.parse(fromdate, formatter), LocalDate.parse(todate, formatter));
 			invoices = invoices.stream().filter(obj1 -> invoices1.stream()
 					.anyMatch(obj2 -> obj2.getInvoiceNumber().equals(obj1.getInvoiceNumber()))).toList();
-			if (invoices.isEmpty())
-				return ResponseEntity.ok("");
 			invoicepage = convertListToPage(invoices, page, size);
 			invoicedtopage = convertInvoicetoInvoiceDTO(invoicepage);
 			invoicedtopage.forEach(System.out::println);
 			return ResponseEntity.ok(invoicedtopage);
-
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw e;

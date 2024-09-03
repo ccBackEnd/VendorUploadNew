@@ -40,7 +40,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.application.main.Repositories.DocDetailsRepository;
-import com.application.main.Repositories.DocumentRepository;
 import com.application.main.Repositories.InvoiceRepository;
 import com.application.main.Repositories.PoSummaryRepository;
 import com.application.main.Repositories.VendorUserRepository;
@@ -48,7 +47,6 @@ import com.application.main.URLCredentialModel.CipherEncDec;
 import com.application.main.URLCredentialModel.DocDetails;
 import com.application.main.awsconfig.AWSClientConfigService;
 import com.application.main.awsconfig.AwsService;
-import com.application.main.model.DocumentsMongo;
 import com.application.main.model.PoDTO;
 import com.application.main.model.PoSummary;
 
@@ -73,9 +71,6 @@ public class POController {
 	private final MongoTemplate mongoTemplate;
 
 	@Autowired
-	DocumentRepository documentRepository;
-
-	@Autowired
 	VendorUserRepository vendoruserrepo;
 	@Autowired
 	InvoiceRepository invoiceRepository;
@@ -93,6 +88,7 @@ public class POController {
 	public LocalDate testing() {
 		return LocalDate.now();
 	}
+	DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
 	public Page<?> convertStreamToPage(Stream<?> entityStream, int page, int size) {
 		List<?> entityList = entityStream.collect(Collectors.toList());
@@ -190,8 +186,8 @@ public class POController {
 	@GetMapping("/poSummary/getSummary")
 	public ResponseEntity<?> searchInvoices(@RequestHeader(value = "Filterby", required = false) String poStatus,
 			@RequestHeader(value = "Fromdate") String fromdate, @RequestHeader(value = "Todate") String todate,
-			@RequestHeader(value = "searchItems", required = false) String searchItems,
-			@RequestHeader(value = "username", required = true) String username,
+			@RequestHeader(value = "Search", required = false) String searchItems,
+			@RequestHeader(value = "Username", required = true) String username,
 			@RequestHeader(value = "pageNumber", defaultValue = "0") int page,
 			@RequestHeader(value = "pageSize", defaultValue = "10") int size) {
 		Page<PoDTO> poDTOpage = null;
@@ -199,12 +195,15 @@ public class POController {
 		List<PoSummary> purchaseorders = null;
 		try {
 			Criteria criteria = new Criteria().where("username").is(username);
+			if(!poStatus.equalsIgnoreCase("All")) {
 			Pattern inc = Pattern.compile(poStatus, Pattern.CASE_INSENSITIVE);
-			Criteria searchedcriteria = new Criteria().where("poStatus").regex(inc);
+			criteria =  new Criteria().where("username").is(username).and("poStatus").regex(inc);
+			}			
+			
 			if (searchItems != null && !searchItems.isEmpty()) {
-				System.out.println(searchItems);
-				searchedcriteria = new Criteria().andOperator(new Criteria().where("username").is(username),
-						new Criteria().orOperator(Criteria.where("poNumber").regex(searchItems),
+				criteria = new Criteria().andOperator(criteria,
+						new Criteria().orOperator(
+								Criteria.where("poNumber").regex(searchItems),
 								Criteria.where("deliveryTimelines").regex(searchItems),
 								Criteria.where("description").regex(searchItems),
 								Criteria.where("deliveryPlant").regex(searchItems),
@@ -216,32 +215,18 @@ public class POController {
 								Criteria.where("poAmount").regex(searchItems),
 								Criteria.where("createdBy").regex(searchItems)));
 			}
-			if (!poStatus.equalsIgnoreCase("All")) {
-				criteria = criteria.andOperator(searchedcriteria, new Criteria().where("poStatus").regex(inc));
-			}
-
+			
 			purchaseorders = mongoTemplate.find(Query.query(criteria), PoSummary.class);
-			System.out.println("-------------");
-			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-			LocalDate Fromdate = LocalDate.parse(fromdate, formatter);
-			LocalDate Todate = LocalDate.parse(todate, formatter);
-			System.out.println(fromdate + " : " + todate);
-			List<PoSummary> purchaseordersbydate = porepo.findByPoIssueDateBetween(Fromdate, Todate);
-			for (PoSummary po : purchaseordersbydate) {
-				System.out.println("------------------");
-				System.out.print("DATE : " + po.getPoIssueDate());
-			}
+			List<PoSummary> purchaseordersbydate = porepo.findByPoIssueDateBetween(LocalDate.parse(fromdate, formatter),  LocalDate.parse(todate, formatter));
 			purchaseorders = purchaseorders.stream().filter(obj1 -> purchaseordersbydate.stream()
 					.anyMatch(obj2 -> obj2.getPoNumber().equals(obj1.getPoNumber()))).toList();
-			if (purchaseorders.isEmpty())
-				return ResponseEntity.ok("");
 			purchaseorderpage = convertListToPage(purchaseorders, page, size);
 			poDTOpage = convertPoAsPODTO(purchaseorderpage);
 			poDTOpage.forEach(System.out::println);
 			return ResponseEntity.ok(poDTOpage);
 		} catch (Exception e) {
 			e.printStackTrace();
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+			throw e;
 		}
 	}
 
@@ -263,11 +248,12 @@ public class POController {
 	@GetMapping("/getFileURLObject")
 	public ResponseEntity<?> getObject(@RequestHeader(value = "url") String url,
 			@RequestHeader("Authorization") String token) throws Exception {
-
+		if(url==null) return ResponseEntity.ok("");
 		token = token.replace("Bearer ", "");
 		Optional<DocDetails> existingdoc = docdetailsrepository.findByUrl(url);
-		if (!existingdoc.isPresent())
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+		if (!existingdoc.isPresent()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+		}
 
 		String key = existingdoc.get().getBase64Encodedsecretkey();
 		SecretKey secretkey = convertBase64ToSecretKey(key);
@@ -295,12 +281,6 @@ public class POController {
 		SecretKey sec = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
 		System.err.println(sec);
 		return sec;
-	}
-
-	@GetMapping("/get-compliances") // to get all the compliances by username, username is required in path
-	public ResponseEntity<?> getCompliances(@RequestParam("username") String username) {
-		List<DocumentsMongo> compliances = documentRepository.findAllByusername(username);
-		return ResponseEntity.ok(compliances);
 	}
 
 }

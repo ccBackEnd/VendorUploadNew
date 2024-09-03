@@ -219,33 +219,4 @@ public class AwsService {
 		responseData.put("InvoiceNumber", invoiceNumber);
 		return responseData;
 	}
-
-//	public ResponseEntity<?> uploadCompliance(String token, MultipartFile file) {
-//
-//		try {
-//			System.out.println(token);
-//			AmazonS3 awsClient = s3client.awsClientConfiguration(token);
-//			System.out.println("----------------------------");
-//			
-//			if (file == null || file.isEmpty())
-//				throw new ResponseStatusException(HttpStatus.SC_METHOD_FAILURE, "Null or Empty file not Accepted", null);
-//			ObjectMetadata obm = new ObjectMetadata();
-//
-//			String fileName = Invoiceid.concat("?#" + file.getOriginalFilename());
-//			bucketName = bucketName.concat(username);
-//			
-//			
-//			
-//			String fileName = file.getOriginalFilename();
-//			ObjectMetadata objm = new ObjectMetadata();
-//			awsClient.putObject("compliance", fileName, file.getInputStream(), objm);
-//			// String url = "minioUrl/compliance/" + fileName;
-//			String url = minioUrl + "/" + bucketName + "/" + fileName;
-//			return ResponseEntity.ok(url);
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//			return ResponseEntity.internalServerError().body("not uploaded");
-//		}
-//	}
-
 }
