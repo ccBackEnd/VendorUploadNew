@@ -15,6 +15,7 @@ import java.util.stream.Stream;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import javax.sound.midi.SysexMessage;
 
 import org.apache.poi.util.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -192,7 +193,11 @@ public class POController {
 	@GetMapping("/poSummary/invoiceagainstpo")
 	public List<InvoiceDTO> getInvoices(
 			@RequestParam(value = "poNumber") String poNumber){
-		List<Invoice> invoicelist = porepo.findByPoNumber(poNumber).get().getInvoiceobject();
+		Optional<PoSummary> po = porepo.findByPoNumber(poNumber);
+		if(po.isEmpty() || !po.isPresent()) return new ArrayList<>();
+		System.err.println("--------------------------------------");
+		List<Invoice> invoicelist = po.get().getInvoiceobject();
+		System.err.println("--------------------------------------");
 		List<InvoiceDTO> ivdto = new ArrayList<>();
 		for (Invoice iv : invoicelist) {
 			ivdto.add(new InvoiceDTO(iv.getId(), iv.getPoNumber(), iv.getInvoiceNumber(), iv.getInvoiceDate(), iv.getStatus(),
