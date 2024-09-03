@@ -14,6 +14,7 @@ import java.util.stream.Stream;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import javax.sound.midi.SysexMessage;
 
 import org.apache.poi.util.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -225,9 +226,10 @@ public class POController {
 			System.out.println("---------After List to Page---------");
 			poDTOpage = convertPoAsPODTO(purchaseorderpage);
 			System.out.println("---------After Page to PO DTO---------");
-			poDTOpage.forEach(po->po.toString());
+			poDTOpage.getContent().forEach(System.out::println);
 			return poDTOpage;
 		} catch (Exception e) {
+			System.out.println("---------Exception ---------0 "+e.getMessage() );
 			e.printStackTrace();
 			throw e;
 		}
@@ -235,12 +237,17 @@ public class POController {
 
 	private Page<PoDTO> convertPoAsPODTO(Page<PoSummary> purchaseorderpage) {
 		System.out.println("---------------------------------------------CONVERTING PAGE PO TO PAGE PO DTO------------------------------------");
-		if(purchaseorderpage.isEmpty() || purchaseorderpage == null) return null;
+		if(purchaseorderpage.isEmpty() || purchaseorderpage == null) {
+			System.out.println("------------NULL CASE -----");
+			return null;
+		}
 		System.out.println("---------------------------------------------PAGE IS NOT NULL------------------------------------");
 		Page<PoDTO> pagepodto = purchaseorderpage.map(po -> new PoDTO(po.getId(), po.getPoNumber(), po.getDescription(),
 				po.getPoIssueDate(), po.getDeliveryDate(), po.getPoStatus(), po.getPoAmount(), po.getNoOfInvoices(),
 				po.getDeliveryTimelines(), po.getDeliveryPlant(), po.getEic(), po.getReceiver(), po.getUrl(),
 				po.getInvoiceobject()));
+		System.out.println("---------------------------------------------PRINTING PAGE PODTO CONTENTS AS LIST-----------------------------------");
+		pagepodto.getContent().forEach(System.out::println);
 		System.out.println("---------------------------------------------CONVERTED SUCCESSFULLY------------------------------------");
 		return pagepodto;
 	}
@@ -253,7 +260,8 @@ public class POController {
 		int end = Math.min((start + pageable.getPageSize()), purchaseorders.size());
 		List<PoSummary> subList = purchaseorders.subList(start, end);
 		System.out.println("---------------------------------------------CONVERTED LIST TO PAGE------------------------------------");
-		System.out.println("List is --------:  " + subList);
+		System.out.println("---------------------------------------------PRINTING LIST-----------------------------------");
+		subList.forEach(System.out::println);
 		return new PageImpl<>(subList, pageable, purchaseorders.size());
 	}
 
