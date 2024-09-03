@@ -230,6 +230,7 @@ public class POController {
 	}
 
 	private Page<PoDTO> convertPoAsPODTO(Page<PoSummary> purchaseorderpage) {
+		if(purchaseorderpage.isEmpty() || purchaseorderpage == null) return null;
 		return purchaseorderpage.map(po -> new PoDTO(po.getId(), po.getPoNumber(), po.getDescription(),
 				po.getPoIssueDate(), po.getDeliveryDate(), po.getPoStatus(), po.getPoAmount(), po.getNoOfInvoices(),
 				po.getDeliveryTimelines(), po.getDeliveryPlant(), po.getEic(), po.getReceiver(), po.getUrl(),
@@ -237,6 +238,7 @@ public class POController {
 	}
 
 	private Page<PoSummary> convertListToPage(List<PoSummary> purchaseorders, int page, int size) {
+		if(purchaseorders.isEmpty() || purchaseorders == null) return null;
 		Pageable pageable = PageRequest.of(page, size, Sort.by("poIssueDate").descending());
 		int start = Math.min((int) pageable.getOffset(), purchaseorders.size());
 		int end = Math.min((start + pageable.getPageSize()), purchaseorders.size());

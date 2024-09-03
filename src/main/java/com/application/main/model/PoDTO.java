@@ -1,6 +1,7 @@
 package com.application.main.model;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -138,7 +139,8 @@ public class PoDTO {
 		this.poAmount = poAmount;
 		this.noOfInvoices = noOfInvoices;
 		this.deliveryTimelines = deliveryTimelines;
-		this.invoiceobject = invoiceobject;
+		if(invoiceobject==null) this.invoiceobject = new ArrayList<>();
+		else this.invoiceobject = invoiceobject;
 		this.deliveryPlant = deliveryPlant;
 		this.eic = eic;
 		this.receiver = receiver;
