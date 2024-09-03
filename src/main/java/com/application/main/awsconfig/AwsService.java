@@ -190,6 +190,8 @@ public class AwsService {
 
 		Optional<PoSummary> po = porepo.findByPoNumber(poNumber);
 
+		
+		invoice = invoicerepository.save(invoice);
 		if (po.isPresent()) {
 			if (po.get().getInvoiceobject() == null || po.get().getInvoiceobject().isEmpty()) {
 				List<Invoice> li = new ArrayList<>();
@@ -207,8 +209,6 @@ public class AwsService {
 //		else return new HashMap<>().put("Error Found", HttpStatus.SC_SERVICE_UNAVAILABLE);
 //		
 		porepo.save(po.get());
-		invoice = invoicerepository.save(invoice);
-
 		System.out.println("Saving Invoice to database");
 		System.out.println("Invoice with details :-> \n" + invoice.toString() + " is saved succesfully");
 		

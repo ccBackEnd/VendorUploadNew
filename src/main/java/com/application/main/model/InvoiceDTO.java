@@ -41,11 +41,11 @@ public class InvoiceDTO {
 	private String invoiceurl;
 	private String invoiceAmount;
 
-	public InvoiceDTO(String id, String poNumber, String invoiceNumber , LocalDate invoiceDate,
+	public InvoiceDTO(String invoiceid, String poNumber, String invoiceNumber , LocalDate invoiceDate,
 			String status, String deliveryPlant, String mobileNumber, String eic,Paymentbreakup paymentdetails, String paymentType, String invoiceurl,
 			String invoiceAmount) {
 		super();
-		this.id = id;
+		this.id = invoiceid;
 		this.poNumber = poNumber;
 		this.invoiceNumber = invoiceNumber;
 		
