@@ -184,7 +184,7 @@ public class POController {
 //	}
 
 	@GetMapping("/poSummary/getSummary")
-	public Page<PoDTO> searchInvoices(@RequestHeader(value = "Filterby", required = false) String poStatus,
+	public void searchInvoices(@RequestHeader(value = "Filterby", required = false) String poStatus,
 			@RequestHeader(value = "Fromdate") String fromdate, @RequestHeader(value = "Todate") String todate,
 			@RequestHeader(value = "Search", required = false) String searchItems,
 			@RequestHeader(value = "Username", required = true) String username,
@@ -227,7 +227,7 @@ public class POController {
 			poDTOpage = convertPoAsPODTO(purchaseorderpage);
 			System.out.println("---------After Page to PO DTO---------");
 			poDTOpage.getContent().forEach(System.out::println);
-			return poDTOpage;
+//			return poDTOpage;
 		} catch (Exception e) {
 			System.out.println("---------Exception ---------0 "+e.getMessage() );
 			e.printStackTrace();
