@@ -193,11 +193,10 @@ public class POController {
 	@GetMapping("/poSummary/invoiceagainstpo")
 	public List<InvoiceDTO> getInvoices(
 			@RequestParam(value = "poNumber") String poNumber){
+		try {
 		Optional<PoSummary> po = porepo.findByPoNumber(poNumber);
 		if(po.isEmpty() || !po.isPresent()) return new ArrayList<>();
-		System.err.println("--------------------------------------");
 		List<Invoice> invoicelist = po.get().getInvoiceobject();
-		System.err.println("--------------------------------------");
 		List<InvoiceDTO> ivdto = new ArrayList<>();
 		for (Invoice iv : invoicelist) {
 			ivdto.add(new InvoiceDTO(iv.getId(), iv.getPoNumber(), iv.getInvoiceNumber(), iv.getInvoiceDate(), iv.getStatus(),
@@ -205,6 +204,10 @@ public class POController {
 		}
 		ivdto.forEach(System.out::println);
 		return ivdto;
+	}catch(Exception e) {
+		e.printStackTrace();
+	}
+		return new ArrayList<>();
 	}
 	public List<InvoiceDTO> convertInvoicetoInvoiceDTOList(List<Invoice> invoicelist) {
 
