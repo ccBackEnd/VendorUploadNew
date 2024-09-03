@@ -219,9 +219,13 @@ public class POController {
 			List<PoSummary> purchaseordersbydate = porepo.findByPoIssueDateBetween(LocalDate.parse(fromdate, formatter),  LocalDate.parse(todate, formatter));
 			purchaseorders = purchaseorders.stream().filter(obj1 -> purchaseordersbydate.stream()
 					.anyMatch(obj2 -> obj2.getPoNumber().equals(obj1.getPoNumber()))).toList();
+			System.out.println("-$$$$$$$$$$$$$$$$$$$---------PRINTING LIST FILTERED -----------$$$$$$$$$$$$$$----");
+			purchaseorders.forEach(System.out::println);
 			purchaseorderpage = convertListToPage(purchaseorders, page, size);
+			System.out.println("---------After List to Page---------");
 			poDTOpage = convertPoAsPODTO(purchaseorderpage);
-			poDTOpage.forEach(System.out::println);
+			System.out.println("---------After Page to PO DTO---------");
+			poDTOpage.forEach(po->po.toString());
 			return poDTOpage;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -230,19 +234,26 @@ public class POController {
 	}
 
 	private Page<PoDTO> convertPoAsPODTO(Page<PoSummary> purchaseorderpage) {
+		System.out.println("---------------------------------------------CONVERTING PAGE PO TO PAGE PO DTO------------------------------------");
 		if(purchaseorderpage.isEmpty() || purchaseorderpage == null) return null;
-		return purchaseorderpage.map(po -> new PoDTO(po.getId(), po.getPoNumber(), po.getDescription(),
+		System.out.println("---------------------------------------------PAGE IS NOT NULL------------------------------------");
+		Page<PoDTO> pagepodto = purchaseorderpage.map(po -> new PoDTO(po.getId(), po.getPoNumber(), po.getDescription(),
 				po.getPoIssueDate(), po.getDeliveryDate(), po.getPoStatus(), po.getPoAmount(), po.getNoOfInvoices(),
 				po.getDeliveryTimelines(), po.getDeliveryPlant(), po.getEic(), po.getReceiver(), po.getUrl(),
 				po.getInvoiceobject()));
+		System.out.println("---------------------------------------------CONVERTED SUCCESSFULLY------------------------------------");
+		return pagepodto;
 	}
 
 	private Page<PoSummary> convertListToPage(List<PoSummary> purchaseorders, int page, int size) {
+		System.out.println("---------------------------------------------CONVERTING LIST TO PAGE------------------------------------");
 		if(purchaseorders.isEmpty() || purchaseorders == null) return null;
 		Pageable pageable = PageRequest.of(page, size, Sort.by("poIssueDate").descending());
 		int start = Math.min((int) pageable.getOffset(), purchaseorders.size());
 		int end = Math.min((start + pageable.getPageSize()), purchaseorders.size());
 		List<PoSummary> subList = purchaseorders.subList(start, end);
+		System.out.println("---------------------------------------------CONVERTED LIST TO PAGE------------------------------------");
+		System.out.println("List is --------:  " + subList);
 		return new PageImpl<>(subList, pageable, purchaseorders.size());
 	}
 

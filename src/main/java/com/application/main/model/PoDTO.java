@@ -164,4 +164,14 @@ public class PoDTO {
 		this.invoiceobject = invoiceobject;
 	}
 
+	@Override
+	public String toString() {
+		return "PoDTO [id=" + id + ", poNumber=" + poNumber + ", description=" + description + ", poIssueDate="
+				+ poIssueDate + ", deliveryDate=" + deliveryDate + ", poStatus=" + poStatus + ", poAmount=" + poAmount
+				+ ", noOfInvoices=" + noOfInvoices + ", deliveryTimelines=" + deliveryTimelines + ", deliveryPlant="
+				+ deliveryPlant + ", invoiceobject=" + invoiceobject + ", eic=" + eic + ", receiver=" + receiver
+				+ ", url=" + url + "]";
+	}
+	
+
 }
