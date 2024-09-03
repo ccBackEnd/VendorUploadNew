@@ -184,7 +184,7 @@ public class POController {
 //	}
 
 	@GetMapping("/poSummary/getSummary")
-	public void searchInvoices(@RequestHeader(value = "Filterby", required = false) String poStatus,
+	public List<PoSummary> searchInvoices(@RequestHeader(value = "Filterby", required = false) String poStatus,
 			@RequestHeader(value = "Fromdate") String fromdate, @RequestHeader(value = "Todate") String todate,
 			@RequestHeader(value = "Search", required = false) String searchItems,
 			@RequestHeader(value = "Username", required = true) String username,
@@ -221,12 +221,13 @@ public class POController {
 			purchaseorders = purchaseorders.stream().filter(obj1 -> purchaseordersbydate.stream()
 					.anyMatch(obj2 -> obj2.getPoNumber().equals(obj1.getPoNumber()))).toList();
 			System.out.println("-$$$$$$$$$$$$$$$$$$$---------PRINTING LIST FILTERED -----------$$$$$$$$$$$$$$----");
-			purchaseorders.forEach(System.out::println);
-			purchaseorderpage = convertListToPage(purchaseorders, page, size);
-			System.out.println("---------After List to Page---------");
-			poDTOpage = convertPoAsPODTO(purchaseorderpage);
-			System.out.println("---------After Page to PO DTO---------");
-			poDTOpage.getContent().forEach(System.out::println);
+			return purchaseorders;
+//			purchaseorders.forEach(System.out::println);
+//			purchaseorderpage = convertListToPage(purchaseorders, page, size);
+//			System.out.println("---------After List to Page---------");
+//			poDTOpage = convertPoAsPODTO(purchaseorderpage);
+//			System.out.println("---------After Page to PO DTO---------");
+//			poDTOpage.getContent().forEach(System.out::println);
 //			return poDTOpage;
 		} catch (Exception e) {
 			System.out.println("---------Exception ---------0 "+e.getMessage() );
