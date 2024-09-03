@@ -197,6 +197,7 @@ public class POController {
 		Optional<PoSummary> po = porepo.findByPoNumber(poNumber);
 		if(po.isEmpty() || !po.isPresent()) return new ArrayList<>();
 		List<Invoice> invoicelist = po.get().getInvoiceobject();
+		if(invoicelist==null) return null;
 		List<InvoiceDTO> ivdto = new ArrayList<>();
 		for (Invoice iv : invoicelist) {
 			ivdto.add(new InvoiceDTO(iv.getId(), iv.getPoNumber(), iv.getInvoiceNumber(), iv.getInvoiceDate(), iv.getStatus(),
