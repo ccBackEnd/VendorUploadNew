@@ -50,7 +50,7 @@ public class InvoiceDTO {
 		this.invoiceNumber = invoiceNumber;
 		
 		this.paymentdetails = paymentdetails;
-		this.invoiceDate ="";
+		this.invoiceDate = invoiceDate.toString();
 		this.status = status;
 		this.deliveryPlant = deliveryPlant;
 		this.mobileNumber = mobileNumber;
