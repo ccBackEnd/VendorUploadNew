@@ -114,7 +114,6 @@ public class POController {
 		String token = request.getHeader("Authorization").replace("Bearer ", "");
 		String username = s3service.getUserNameFromToken(token);
 		s3service.createBucket(token, username);
-		DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE;
 		System.out.println("Po Creation Initiated : UserName -> " + username);
 
 		try {

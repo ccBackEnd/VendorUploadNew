@@ -47,7 +47,7 @@ public class AwsService {
 	@Autowired
 	private AWSClientConfigService s3client;
 	private String token;
-
+	DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 	@Autowired
 	InvoiceRepository invoicerepository;
 
@@ -171,7 +171,6 @@ public class AwsService {
 		invoice.setRemarks(set);
 		invoice.setUsername(username);
 		invoice.setInvoiceAmount(invoiceAmount);
-		DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE;
 		if (invoiceDate != null) {
 			invoice.setInvoiceDate(LocalDate.parse(invoiceDate, formatter));
 			System.err.println(invoice.getInvoiceDate());
