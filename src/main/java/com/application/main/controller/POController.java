@@ -201,8 +201,9 @@ public class POController {
 		List<InvoiceDTO> ivdto = new ArrayList<>();
 		for (Invoice iv : invoicelist) {
 			ivdto.add(new InvoiceDTO(iv.getId(), iv.getPoNumber(), iv.getInvoiceNumber(), iv.getInvoiceDate(), iv.getStatus(),
-					iv.getDeliveryPlant(), iv.getMobileNumber(), iv.getEic(), paymentrepo.findByInvoiceNumber(iv.getInvoiceNumber()), iv.getPaymentType(), iv.getInvoiceurl(), iv.getInvoiceAmount()));
+					iv.getDeliveryPlant(), iv.getMobileNumber(), iv.getEic(), null, iv.getPaymentType(), iv.getInvoiceurl(), iv.getInvoiceAmount()));
 		}
+		ivdto.forEach(System.out::println);
 		return ivdto;
 
 	}
