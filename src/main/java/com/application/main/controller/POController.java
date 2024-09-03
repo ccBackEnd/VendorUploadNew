@@ -193,8 +193,13 @@ public class POController {
 	public List<InvoiceDTO> getInvoices(
 			@RequestParam(value = "poNumber") String poNumber){
 		List<Invoice> invoicelist = porepo.findByPoNumber(poNumber).get().getInvoiceobject();
-		return convertInvoicetoInvoiceDTOList(invoicelist) ;
-		
+		List<InvoiceDTO> ivdto = new ArrayList<>();
+		for (Invoice iv : invoicelist) {
+			ivdto.add(new InvoiceDTO(iv.getId(), iv.getPoNumber(), iv.getInvoiceNumber(), iv.getInvoiceDate(), iv.getStatus(),
+					iv.getDeliveryPlant(), iv.getMobileNumber(), iv.getEic(), null, iv.getPaymentType(), iv.getInvoiceurl(), iv.getInvoiceAmount()));
+		}
+		ivdto.forEach(System.out::println);
+		return ivdto;
 	}
 	public List<InvoiceDTO> convertInvoicetoInvoiceDTOList(List<Invoice> invoicelist) {
 
