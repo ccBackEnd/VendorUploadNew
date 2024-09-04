@@ -179,6 +179,7 @@ public class AwsService {
 		invoice.setRemarks(remarksset);
 		invoice.setUsername(username);
 		invoice.setInvoiceAmount(invoiceAmount);
+		System.out.println("-------------------- before invoice date--------------");
 		if (invoiceDate != null) {
 			invoice.setInvoiceDate(LocalDate.parse(invoiceDate, formatter));
 			System.err.println(invoice.getInvoiceDate());
