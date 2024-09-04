@@ -1,10 +1,8 @@
-package com.application.main.model;
+package com.application.main.credentialmodel;
 
 import org.hibernate.validator.constraints.UniqueElements;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-
-import com.application.main.Paymentmodel.AddressVendorUser;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

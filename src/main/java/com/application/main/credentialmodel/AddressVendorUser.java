@@ -1,4 +1,4 @@
-package com.application.main.Paymentmodel;
+package com.application.main.credentialmodel;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

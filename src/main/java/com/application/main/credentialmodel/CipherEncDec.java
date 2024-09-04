@@ -1,4 +1,4 @@
-package com.application.main.URLCredentialModel;
+package com.application.main.credentialmodel;
 
 import java.util.Base64;
 

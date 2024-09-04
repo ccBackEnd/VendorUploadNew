@@ -1,6 +1,4 @@
-package com.application.main.model;
-
-import java.util.List;
+package com.application.main.Inboxmodel;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -14,13 +12,11 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Document(collection = "InvoiceInboxHistory")
-public class InvoiceHistoryDatabase {
+@Document(collection = "RevertedInvoices")
+public class SentInvoicesDatabaseModel {
 	@Id
 	private String id;
-	
 	private String invoiceid;
 	private String invoicenumber;
-	private List<InvoicesHistory> invoicehistory;
-
+	private InvoicesHistory sentinvoice;
 }

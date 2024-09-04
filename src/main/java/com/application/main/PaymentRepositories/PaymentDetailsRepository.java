@@ -1,10 +1,12 @@
-package com.application.main.Paymentmodel;
+package com.application.main.PaymentRepositories;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
+
+import com.application.main.Paymentmodel.Paymentbreakup;
 
 
 public interface PaymentDetailsRepository extends MongoRepository<Paymentbreakup, String> {

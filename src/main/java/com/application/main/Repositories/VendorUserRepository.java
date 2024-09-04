@@ -5,8 +5,8 @@ import java.util.Optional;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
 
-import com.application.main.model.UserDTO;
-import com.application.main.model.VendorUserModel;
+import com.application.main.credentialmodel.UserDTO;
+import com.application.main.credentialmodel.VendorUserModel;
 
 
 public interface VendorUserRepository extends MongoRepository<UserDTO, String>{

@@ -1,13 +1,11 @@
 package com.application.main.model;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.annotation.Id;
 
-import com.application.main.Paymentmodel.PaymentDetailsRepository;
+import com.application.main.PaymentRepositories.PaymentDetailsRepository;
 import com.application.main.Paymentmodel.Paymentbreakup;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
@@ -32,6 +30,8 @@ public class InvoiceDTO {
 	private String invoiceNumber;
 	@JsonFormat(pattern = "yyyy-MM-dd")
 	private String invoiceDate;
+	private String latestRecieviedDate;
+	private String latestforwardedDate;
 	private String status;
 	private String deliveryPlant;
 	private String mobileNumber;
@@ -41,16 +41,38 @@ public class InvoiceDTO {
 	private String invoiceurl;
 	private String invoiceAmount;
 
+//	public InvoiceDTO(String invoiceid, String poNumber, String invoiceNumber , LocalDate invoiceDate,
+//			String status, String deliveryPlant, String mobileNumber, String eic,Paymentbreakup paymentdetails, String paymentType, String invoiceurl,
+//			String invoiceAmount) {
+//		super();
+//		this.id = invoiceid;
+//		this.poNumber = poNumber;
+//		this.invoiceNumber = invoiceNumber;
+//		
+//		this.paymentdetails = paymentdetails;
+//		this.invoiceDate = invoiceDate.toString();
+//		this.status = status;
+//		this.deliveryPlant = deliveryPlant;
+//		this.mobileNumber = mobileNumber;
+//		this.eic = eic;
+//		this.paymentType = paymentType;
+//		this.invoiceurl = invoiceurl;
+//		this.invoiceAmount = invoiceAmount;
+//	}
+	
 	public InvoiceDTO(String invoiceid, String poNumber, String invoiceNumber , LocalDate invoiceDate,
 			String status, String deliveryPlant, String mobileNumber, String eic,Paymentbreakup paymentdetails, String paymentType, String invoiceurl,
-			String invoiceAmount) {
+			String invoiceAmount,LocalDate revertdate , LocalDate forwardeddate) {
 		super();
 		this.id = invoiceid;
 		this.poNumber = poNumber;
 		this.invoiceNumber = invoiceNumber;
-		
-		this.paymentdetails = paymentdetails;
+		if(revertdate!=null) this.latestRecieviedDate = revertdate.toString();
+		else this.latestRecieviedDate="";
+		if(forwardeddate!=null) this.latestforwardedDate = forwardeddate.toString();
+		else this.latestforwardedDate = "";
 		this.invoiceDate = invoiceDate.toString();
+		this.paymentdetails = paymentdetails;
 		this.status = status;
 		this.deliveryPlant = deliveryPlant;
 		this.mobileNumber = mobileNumber;

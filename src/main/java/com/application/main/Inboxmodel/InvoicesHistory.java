@@ -1,10 +1,6 @@
-package com.application.main.model;
-
-import java.time.LocalDate;
-import java.util.Set;
+package com.application.main.Inboxmodel;
 
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,7 +18,7 @@ public class InvoicesHistory {
 	private String fileurl;
 	private String status;
 	private String invoiceNo;
-	private LocalDate forwardRevertDate;
+	private String forwardRevertDate;
 	private String remarks;
 
 }

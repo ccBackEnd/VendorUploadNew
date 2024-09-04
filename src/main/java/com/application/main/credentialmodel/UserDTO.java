@@ -1,4 +1,4 @@
-package com.application.main.model;
+package com.application.main.credentialmodel;
 
 import java.util.Set;
 

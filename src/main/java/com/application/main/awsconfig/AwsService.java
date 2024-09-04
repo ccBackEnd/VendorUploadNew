@@ -30,8 +30,8 @@ import com.amazonaws.services.s3.model.PutObjectResult;
 import com.application.main.Repositories.DocDetailsRepository;
 import com.application.main.Repositories.InvoiceRepository;
 import com.application.main.Repositories.PoSummaryRepository;
-import com.application.main.URLCredentialModel.CipherEncDec;
-import com.application.main.URLCredentialModel.DocDetails;
+import com.application.main.credentialmodel.CipherEncDec;
+import com.application.main.credentialmodel.DocDetails;
 import com.application.main.model.Invoice;
 import com.application.main.model.PoSummary;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -65,7 +65,8 @@ public class AwsService {
 			AmazonS3 awsClient = s3client.awsClientConfiguration(token);
 			if (!awsClient.doesBucketExistV2(bucketName))
 				awsClient.createBucket(bucketName);
-			System.out.println("----------BUCKET CREATED---------");
+			System.out.println("----------BUCKET CREATED SUCCESSFULLY---------");
+			System.out.println("bucket name : " + bucketName);
 		} catch (AmazonS3Exception e) {
 			System.out.println("CREATE BUCKET EXCEPTION");
 			System.err.println(e.getErrorMessage());
@@ -77,7 +78,7 @@ public class AwsService {
 		String tokenBody = token.split("\\.")[1];
 		Base64.Decoder decoder = Base64.getUrlDecoder();
 		String payload = new String(decoder.decode(tokenBody));
-		System.out.println("payload" + payload);
+		System.out.println("Getting Username from payload");
 		return getFieldFromJson(payload, "preferred_username");
 	}
 
@@ -86,7 +87,9 @@ public class AwsService {
 		try {
 			ObjectMapper objectMapper = new ObjectMapper();
 			JsonNode jsonNode = objectMapper.readTree(json);
+			System.out.println(jsonNode.toPrettyString());
 			fieldValue = jsonNode.get(fieldName).asText();
+			System.out.println("------------------------------------");
 			System.out.println(fieldName + " : " + fieldValue);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -94,27 +97,26 @@ public class AwsService {
 		return fieldValue;
 	}
 
-	public DocDetails uploadFile(String token , MultipartFile file, String id, String username) throws IOException, Exception {
-
-		System.err.println("#################################");
-		System.out.println("token from AWS Service : " + token);
-		
+	public DocDetails uploadFile(String token, MultipartFile file, String id, String username)
+			throws IOException, Exception {
+		System.out.println("uploading file attached");
+		System.out.println("Getting token from AWS Service : ");
+		System.out.println("token is : " + token);
 		String fileName = id.concat("?#" + file.getOriginalFilename());
 		AmazonS3 awsClient = s3client.awsClientConfiguration(token);
-		
-		System.err.println(awsClient.getRegion());
-		System.err.println("#################################");
-		
+
 		if (file == null || file.isEmpty()) {
 			System.out.println("File is null");
-			throw new ResponseStatusException(HttpStatus.SC_METHOD_FAILURE, "Null or Empty file not Accepted", null);
+			return new DocDetails();
 		}
 		if (awsClient.doesObjectExist(bucketName, fileName)) {
 			System.err.println("FILE WITH " + file.getOriginalFilename() + " Already Exists !");
+			System.err.println("-------------Replacing file without permission-------------");
+			awsClient.deleteObject(bucketName, fileName);
 		}
-		
-		System.out.println("UPLOADIN FILES ................");
-		
+
+		System.out.println("UPLOADING FILES ................");
+
 		PutObjectResult res = awsClient.putObject(bucketName, fileName, file.getInputStream(), new ObjectMetadata());
 		String invoiceFileUrl = bucketName + "XCIDHK2788k99BBSEEL99" + fileName;
 
@@ -145,10 +147,10 @@ public class AwsService {
 		return keyGenerator.generateKey();
 	}
 
-	public Map<String, Object> uploadMongoFile(String username , String msmecategory, String poNumber, String paymentType,
-			String deliveryPlant, String invoiceDate, String invoiceNumber, String invoiceAmount, String mobileNumber,
-			String email, String alternateMobileNumber, String alternateEmail, String remarks, String ses,
-			boolean isagainstLC, boolean isGst, boolean isTredExchangePayment, String factoryunitnumber,
+	public Map<String, Object> uploadMongoFile(String username, String msmecategory, String poNumber,
+			String paymentType, String deliveryPlant, String invoiceDate, String invoiceNumber, String invoiceAmount,
+			String mobileNumber, String email, String alternateMobileNumber, String alternateEmail, String remarks,
+			String ses, boolean isagainstLC, boolean isGst, boolean isTredExchangePayment, String factoryunitnumber,
 			boolean isMDCCPayment, String mdccnumber, String sellerGst, String buyerGst, String bankaccountno,
 			DocDetails invoicedetails, List<DocDetails> suppDocNameList)
 
@@ -164,19 +166,17 @@ public class AwsService {
 		List<DocDetails> invoiceobjectaslist = new ArrayList<>();
 		if (invoicedetails != null)
 			invoiceobjectaslist.add(invoicedetails);
-
 		invoice.setInvoiceFile(invoiceobjectaslist);
 		invoice.setSupportingDocument(suppDocNameList);
-
 		if (alternateMobileNumber != null && !alternateMobileNumber.isEmpty())
 			invoice.setAlternateMobileNumber(alternateMobileNumber);
-		
+
 		if (alternateEmail != null && !alternateEmail.isEmpty())
 			invoice.setAlternateEmail(alternateEmail);
-		
-		Set<String> set = new HashSet<String>();
-		set.add(remarks);
-		invoice.setRemarks(set);
+
+		Set<String> remarksset = new HashSet<String>();
+		remarksset.add(remarks);
+		invoice.setRemarks(remarksset);
 		invoice.setUsername(username);
 		invoice.setInvoiceAmount(invoiceAmount);
 		if (invoiceDate != null) {
@@ -190,19 +190,19 @@ public class AwsService {
 
 		Optional<PoSummary> po = porepo.findByPoNumber(poNumber);
 
-		
-		invoice = invoicerepository.save(invoice);
 		if (po.isPresent()) {
-			if (po.get().getInvoiceobject() == null || po.get().getInvoiceobject().isEmpty()) {
-				List<Invoice> li = new ArrayList<>();
-				li.add(invoice);
+			invoice = invoicerepository.save(invoice);
+			if (po.get().getInvoiceidlist() == null || po.get().getInvoiceidlist().isEmpty()) {
+				Map<String, String> invoicemap = new HashMap<>();
+				invoicemap.put(invoice.getId(), invoice.getInvoiceNumber());
 				po.get().setNoOfInvoices(po.get().getNoOfInvoices() + 1);
-				po.get().setInvoiceobject(li);
+				po.get().setInvoiceidlist(invoicemap);
 			} else {
-				po.get().getInvoiceobject().add(invoice);
+				po.get().getInvoiceidlist().put(invoice.getId(), invoice.getInvoiceNumber());
 				po.get().setNoOfInvoices(po.get().getNoOfInvoices() + 1);
-				System.out.println(po.get().getNoOfInvoices());
 			}
+			System.out.println("No. of Invoices in Referenced Po with poNumber : " + poNumber + " is : "
+					+ po.get().getNoOfInvoices());
 
 		} else
 			return Map.of("Error Found , PO is Not found or Not accesible", HttpStatus.SC_CONFLICT);
@@ -211,15 +211,12 @@ public class AwsService {
 		porepo.save(po.get());
 		System.out.println("Saving Invoice to database");
 		System.out.println("Invoice with details :-> \n" + invoice.toString() + " is saved succesfully");
-		
+
 		Map<String, Object> responseData = new HashMap<>();
 		System.err.println("---------------------------------");
-
-		responseData.put("alternateNumber", alternateMobileNumber);
-		responseData.put("alternativeEmail", alternateEmail);
-		Set<String> remarkslist = new HashSet<>();
-		remarkslist.addAll(set);
-		responseData.put("Remarks", remarkslist);
+		Set<String> remarksSet = new HashSet<>();
+		remarksSet.addAll(remarksset);
+		responseData.put("Remarks", remarksSet);
 		responseData.put("InvoiceAmount", invoiceAmount);
 		responseData.put("Username", username);
 		responseData.put("deliveryPlant", deliveryPlant);

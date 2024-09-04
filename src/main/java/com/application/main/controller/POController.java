@@ -3,10 +3,9 @@ package com.application.main.controller;
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -15,7 +14,6 @@ import java.util.stream.Stream;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import javax.sound.midi.SysexMessage;
 
 import org.apache.poi.util.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,15 +39,15 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.amazonaws.services.s3.AmazonS3;
-import com.application.main.Paymentmodel.PaymentDetailsRepository;
+import com.application.main.PaymentRepositories.PaymentDetailsRepository;
 import com.application.main.Repositories.DocDetailsRepository;
 import com.application.main.Repositories.InvoiceRepository;
 import com.application.main.Repositories.PoSummaryRepository;
 import com.application.main.Repositories.VendorUserRepository;
-import com.application.main.URLCredentialModel.CipherEncDec;
-import com.application.main.URLCredentialModel.DocDetails;
 import com.application.main.awsconfig.AWSClientConfigService;
 import com.application.main.awsconfig.AwsService;
+import com.application.main.credentialmodel.CipherEncDec;
+import com.application.main.credentialmodel.DocDetails;
 import com.application.main.model.Invoice;
 import com.application.main.model.InvoiceDTO;
 import com.application.main.model.PoDTO;
@@ -63,7 +61,7 @@ public class POController {
 
 	@Autowired
 	PoSummaryRepository porepo;
-	
+
 	@Autowired
 	PaymentDetailsRepository paymentrepo;
 
@@ -96,6 +94,7 @@ public class POController {
 	public LocalDate testing() {
 		return LocalDate.now();
 	}
+
 	DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
 	public Page<?> convertStreamToPage(Stream<?> entityStream, int page, int size) {
@@ -127,7 +126,7 @@ public class POController {
 		try {
 			LocalDate issuedt = LocalDate.parse(poIssueDate, formatter);
 			LocalDate delt = LocalDate.parse(deliveryDate, formatter);
-			DocDetails PoUploadObject = s3service.uploadFile(token,filePO, poNumber, "");
+			DocDetails PoUploadObject = s3service.uploadFile(token, filePO, poNumber, "");
 //			DocDetails doc = new DocDetails(filePO.getOriginalFilename(), poNumber, PoUploadObject.get("generatedURL").toString(),(SecretKey) PoUploadObject.get("secretkey"));
 
 			PoSummary ps = new PoSummary(poStatus, poNumber, description, issuedt, delt, deliveryPlant,
@@ -163,7 +162,7 @@ public class POController {
 		Optional<PoSummary> po = porepo.findByPoNumber(ponumber);
 		if (!po.isPresent())
 			return ResponseEntity.ok(HttpStatus.NOT_FOUND);
-		
+
 		PoDTO podto = new PoDTO(po.get().getId(), po.get().getPoNumber(), po.get().getDescription(),
 				po.get().getPoIssueDate(), po.get().getDeliveryDate(), po.get().getPoStatus(), po.get().getPoAmount(),
 				po.get().getNoOfInvoices(), po.get().getDeliveryTimelines(), po.get().getDeliveryPlant(),
@@ -171,55 +170,34 @@ public class POController {
 		return ResponseEntity.ok(podto);
 
 	}
-	
 
-	@GetMapping("/getAllRoles")
-	public List<String> getAllRoles() {
-		List<String> roles = Arrays.asList("HR", "Finance", "Admin", "Admin2");
-		return roles;
-	}
-
-//	@GetMapping("/email")
-//	public ResponseEntity<String> getEmailByEic(@RequestParam("eic") String eic) {
-//		VendorUserModel user = vendoruserrepo.findByEic(eic);
-//
-//		if (user != null) {
-//			return ResponseEntity.ok(user.getVendoremail());
-//		} else {
-//			return ResponseEntity.notFound().build();
-//		}
-//	}
-	
 	@GetMapping("/poSummary/invoiceagainstpo")
-	public List<InvoiceDTO> getInvoices(
-			@RequestParam(value = "poNumber") String poNumber){
+	public List<InvoiceDTO> getInvoices(@RequestParam(value = "poNumber") String poNumber) {
 		try {
-		Optional<PoSummary> po = porepo.findByPoNumber(poNumber);
-		if(po.isEmpty() || !po.isPresent()) return new ArrayList<>();
-		List<Invoice> invoicelist = po.get().getInvoiceobject();
-		if(invoicelist==null) return null;
-		List<InvoiceDTO> ivdto = new ArrayList<>();
-		for (Invoice iv : invoicelist) {
-			ivdto.add(new InvoiceDTO(iv.getId(), iv.getPoNumber(), iv.getInvoiceNumber(), iv.getInvoiceDate(), iv.getStatus(),
-					iv.getDeliveryPlant(), iv.getMobileNumber(), iv.getEic(), null, iv.getPaymentType(), iv.getInvoiceurl(), iv.getInvoiceAmount()));
-		}
-		ivdto.forEach(System.out::println);
-		return ivdto;
-	}catch(Exception e) {
-		e.printStackTrace();
-	}
-		return new ArrayList<>();
-	}
-	public List<InvoiceDTO> convertInvoicetoInvoiceDTOList(List<Invoice> invoicelist) {
+			Optional<PoSummary> po = porepo.findByPoNumber(poNumber);
+			if (po.isEmpty() || po.get().getInvoiceidlist().isEmpty())
+				return List.of();
+			Map<String, String> invoicemap = po.get().getInvoiceidlist();
 
-		List<InvoiceDTO> ivdto = new ArrayList<>();
-		for (Invoice iv : invoicelist) {
-			ivdto.add(new InvoiceDTO(iv.getId(), iv.getPoNumber(), iv.getInvoiceNumber(), iv.getInvoiceDate(), iv.getStatus(),
-					iv.getDeliveryPlant(), iv.getMobileNumber(), iv.getEic(), null, iv.getPaymentType(), iv.getInvoiceurl(), iv.getInvoiceAmount()));
-		}
-		ivdto.forEach(System.out::println);
-		return ivdto;
+			List<Invoice> invoicelist = invoicemap.entrySet().stream()
+					.map(entry -> invoiceRepository.findByIdAndInvoiceNumber(entry.getKey(), entry.getValue()))
+					.flatMap(Optional::stream).collect(Collectors.toList());
 
+//		List<Invoice> invoicelist = new ArrayList<>();
+//		   for (Map.Entry<String, String> entry : invoicemap.entrySet()) {
+//			   Optional<Invoice> iv = invoiceRepository.findByIdAndInvoiceNumber(entry.getKey(), entry.getValue());
+//			   if(iv.isPresent()) invoicelist.add( iv.get());
+//		   }
+			return invoicelist.stream()
+					.map(iv -> new InvoiceDTO(iv.getId(), iv.getPoNumber(), iv.getInvoiceNumber(), iv.getInvoiceDate(),
+							iv.getStatus(), iv.getDeliveryPlant(), iv.getMobileNumber(), iv.getEic(), null,
+							iv.getPaymentType(), iv.getInvoiceurl(), iv.getInvoiceAmount(), iv.getLatestRecievingDate(),
+							iv.getLatestforwardDate()))
+					.collect(Collectors.toList());
+		} catch (Exception e) {
+			e.printStackTrace();
+			return List.of();
+		}
 	}
 
 	@GetMapping("/poSummary/getSummary")
@@ -234,80 +212,75 @@ public class POController {
 		List<PoSummary> purchaseorders = null;
 		try {
 			Criteria criteria = new Criteria().where("username").is(username);
-			if(!poStatus.equalsIgnoreCase("All")) {
-			Pattern inc = Pattern.compile(poStatus, Pattern.CASE_INSENSITIVE);
-			criteria =  new Criteria().where("username").is(username).and("poStatus").regex(inc);
-			}			
-			
-			if (searchItems != null && !searchItems.isEmpty()) {
-				criteria = new Criteria().andOperator(criteria,
-						new Criteria().orOperator(
-								Criteria.where("poNumber").regex(searchItems),
-								Criteria.where("deliveryTimelines").regex(searchItems),
-								Criteria.where("description").regex(searchItems),
-								Criteria.where("deliveryPlant").regex(searchItems),
-								Criteria.where("poStatus").regex(searchItems), Criteria.where("eic").regex(searchItems),
-								Criteria.where("remarks").regex(searchItems),
-								Criteria.where("receiver").regex(searchItems),
-								Criteria.where("invoiceobject.invoiceAmount").regex(searchItems),
-								Criteria.where("invoiceobject.invoiceNumber").regex(searchItems),
-								Criteria.where("poAmount").regex(searchItems),
-								Criteria.where("createdBy").regex(searchItems)));
+			if (!poStatus.equalsIgnoreCase("All")) {
+				Pattern statusPattern = Pattern.compile(poStatus, Pattern.CASE_INSENSITIVE);
+				criteria = criteria.and("poStatus").regex(statusPattern);
 			}
-			
+
+			if (searchItems != null && !searchItems.isEmpty()) {
+				criteria = criteria.andOperator(new Criteria().orOperator(Criteria.where("poNumber").regex(searchItems),
+						Criteria.where("deliveryTimelines").regex(searchItems),
+						Criteria.where("description").regex(searchItems),
+						Criteria.where("deliveryPlant").regex(searchItems),
+						Criteria.where("poStatus").regex(searchItems), Criteria.where("eic").regex(searchItems),
+						Criteria.where("remarks").regex(searchItems), Criteria.where("receiver").regex(searchItems),
+						Criteria.where("poAmount").regex(searchItems), Criteria.where("createdBy").regex(searchItems)));
+			}
+
 			purchaseorders = mongoTemplate.find(Query.query(criteria), PoSummary.class);
-			List<PoSummary> purchaseordersbydate = porepo.findByPoIssueDateBetween(LocalDate.parse(fromdate, formatter),  LocalDate.parse(todate, formatter));
+			List<PoSummary> purchaseordersbydate = porepo.findByPoIssueDateBetween(LocalDate.parse(fromdate, formatter),
+					LocalDate.parse(todate, formatter));
 			purchaseorders = purchaseorders.stream().filter(obj1 -> purchaseordersbydate.stream()
 					.anyMatch(obj2 -> obj2.getPoNumber().equals(obj1.getPoNumber()))).toList();
-			System.out.println("-$$$$$$$$$$$$$$$$$$$---------PRINTING LIST FILTERED -----------$$$$$$$$$$$$$$----");
-			
+			System.out.println("-$$$$$$$$$$$$$$$$$$$---------Printing Filtered List-----------$$$$$$$$$$$$$$----");
+			System.out.println();
+			System.out.println();
 			purchaseorders.forEach(System.out::println);
 			purchaseorderpage = convertListToPage(purchaseorders, page, size);
-			System.out.println("---------After List to Page---------");
+			System.out.println("---------Converting PO to PODTO---------");
 			poDTOpage = convertPoAsPODTO(purchaseorderpage);
-			System.out.println("---------After Page to PO DTO---------");
-			poDTOpage.getContent().forEach(System.out::println);
 			return poDTOpage;
 		} catch (Exception e) {
-			System.out.println("---------Exception ---------0 "+e.getMessage() );
+			System.out.println("---------Exception --------- " + e.getMessage());
 			e.printStackTrace();
 			throw e;
 		}
 	}
 
 	private Page<PoDTO> convertPoAsPODTO(Page<PoSummary> purchaseorderpage) {
-		System.out.println("---------------------------------------------CONVERTING PAGE PO TO PAGE PO DTO------------------------------------");
-		if(purchaseorderpage.isEmpty() || purchaseorderpage == null) {
+		System.out.println("---------   CONVERTING PAGE PO TO PAGE PO DTO   -----------------------------");
+		if (purchaseorderpage.isEmpty() || purchaseorderpage == null) {
 			System.out.println("------------NULL CASE -----");
 			return null;
 		}
-		System.out.println("---------------------------------------------PAGE IS NOT NULL------------------------------------");
 		Page<PoDTO> pagepodto = purchaseorderpage.map(po -> new PoDTO(po.getId(), po.getPoNumber(), po.getDescription(),
 				po.getPoIssueDate(), po.getDeliveryDate(), po.getPoStatus(), po.getPoAmount(), po.getNoOfInvoices(),
 				po.getDeliveryTimelines(), po.getDeliveryPlant(), po.getEic(), po.getReceiver(), po.getUrl()));
-		System.out.println("---------------------------------------------PRINTING PAGE PODTO CONTENTS AS LIST-----------------------------------");
+		System.out.println("--------PRINTING PAGE PODTO CONTENTS AS LIST----------");
+		System.out.println();
+		System.out.println();
 		pagepodto.getContent().forEach(System.out::println);
-		System.out.println("---------------------------------------------CONVERTED SUCCESSFULLY------------------------------------");
+		System.out.println("---------------- PO AS PODTO CONVERTED SUCCESSFULLY------------");
 		return pagepodto;
 	}
 
 	private Page<PoSummary> convertListToPage(List<PoSummary> purchaseorders, int page, int size) {
-		System.out.println("---------------------------------------------CONVERTING LIST TO PAGE------------------------------------");
-		if(purchaseorders.isEmpty() || purchaseorders == null) return null;
+		System.out.println("------------------    CONVERTING LIST TO PAGE    ---------------");
+		if (purchaseorders.isEmpty() || purchaseorders == null)
+			return null;
 		Pageable pageable = PageRequest.of(page, size, Sort.by("poIssueDate").descending());
 		int start = Math.min((int) pageable.getOffset(), purchaseorders.size());
 		int end = Math.min((start + pageable.getPageSize()), purchaseorders.size());
 		List<PoSummary> subList = purchaseorders.subList(start, end);
-		System.out.println("---------------------------------------------CONVERTED LIST TO PAGE------------------------------------");
-		System.out.println("---------------------------------------------PRINTING LIST-----------------------------------");
-		subList.forEach(System.out::println);
+		System.out.println("--------SUCCESFULLY CONVERTED LIST TO PAGE --------");
 		return new PageImpl<>(subList, pageable, purchaseorders.size());
 	}
 
 	@GetMapping("/getFileURLObject")
 	public ResponseEntity<?> getObject(@RequestHeader(value = "url") String url,
 			@RequestHeader("Authorization") String token) throws Exception {
-		if(url==null) return ResponseEntity.ok("");
+		if (url == null)
+			return ResponseEntity.ok("");
 		token = token.replace("Bearer ", "");
 		Optional<DocDetails> existingdoc = docdetailsrepository.findByUrl(url);
 		if (!existingdoc.isPresent()) {

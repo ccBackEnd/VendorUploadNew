@@ -37,9 +37,7 @@ public class AWSClientConfigService implements AWSClientConfig{
 		System.out.println("------------------------AWS CLIENT CONFIGURATION STARTS------------------------");
 		ClientConfiguration clientConfiguration = new ClientConfiguration();
 		clientConfiguration.setSignerOverride("AWSS3V4SignerType");
-		
 		BasicSessionCredentials response = awsConfigService.client(token);
-		System.out.println("Response   " +response);
 		AmazonS3 awsClient = awsS3ContentService.client();
 		System.out.println("------------------------CLIENT CREATED SUCCESSFULLY-----------------------------");
 		awsClient = AmazonS3ClientBuilder.standard()

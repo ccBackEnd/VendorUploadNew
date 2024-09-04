@@ -2,13 +2,14 @@ package com.application.main.model;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import com.application.main.URLCredentialModel.DocDetails;
+import com.application.main.credentialmodel.DocDetails;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import lombok.AllArgsConstructor;
@@ -29,8 +30,10 @@ public class Invoice {
 	private String poNumber;
 	private String paymentType;
 	private String deliveryPlant;
-	private List<InvoicesHistory> invoicehistorylist;
-
+	private LinkedHashMap<LocalDateTime,String> recieveinvoicesidlist;
+	private LinkedHashMap<LocalDateTime,String> sentinvoicesidlist;
+	private LocalDate latestRecievingDate;
+	private LocalDate latestforwardDate;
 	@JsonFormat(pattern = "yyyy-mm-dd")
 	private LocalDate invoiceDate;
 	private LocalDateTime currentDateTime;

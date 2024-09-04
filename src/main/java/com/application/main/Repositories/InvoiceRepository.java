@@ -24,11 +24,11 @@ public interface InvoiceRepository extends MongoRepository<Invoice, String> {
 	List<Invoice> findByUsername(String username);
 	List<Invoice> findByUsernameAndStatus(String username,String status);
 	List<Invoice> findByInvoiceDateBetween(LocalDate invoiceDate1,LocalDate invDate2);
-
+	Optional<Invoice> findByIdAndInvoiceNumber(String id, String invoiceNumber);
 
 
 	Page<InvoiceDTO> findByEic(String eic, Pageable pageable);
-
+	
 	Page<InvoiceDTO> findByInvoiceNumber(String invoiceNumber,Pageable pageable);
 
 	Page<InvoiceDTO> findByUsernameAndPoNumber(String username, String poNumber,Pageable pageable);
