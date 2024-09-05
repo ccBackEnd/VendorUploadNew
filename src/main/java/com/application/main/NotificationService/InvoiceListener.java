@@ -1,10 +1,7 @@
 package com.application.main.NotificationService;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,13 +30,12 @@ public class InvoiceListener {
 		try{
 			Map<String , Object> response = new HashMap<>();
 
-		LinkedHashMap<String,String> mapid = invoice.getSentinvoicesidlist();
-		List<Map.Entry<String, String>> entryList = new ArrayList<>(mapid.entrySet());
-		Map.Entry<String, String> lastmapentry = entryList.get(entryList.size() - 1);
-		SentInvoicesDatabaseModel sentinvoice = sentinvrepo.findById(lastmapentry.getValue()).get();
+			ArrayList<String> sentlist = invoice.getSentinvoicesidlist();
+			String id = sentlist.get(sentlist.size()-1);
+		SentInvoicesDatabaseModel sentinvoice = sentinvrepo.findById(id).get();
 		
 		
-		response.put("LatestInvoiceObjectId", lastmapentry.getValue());	
+		response.put("LatestInvoiceObjectId",id);	
 		response.put("DATETIME",sentinvoice.getSentinvoice().getForwardRevertDate().toString());
 		response.put("InvoiceInboxObject", sentinvoice);
 		response.put("Inboxobject", sentinvoice.getSentinvoice());
@@ -57,13 +53,13 @@ public class InvoiceListener {
 	public ResponseEntity<?> recieve(Invoice invoice ) {
 		try {
 		Map<String , Object> response = new HashMap<>();
-		LinkedHashMap<String,String> mapid = invoice.getRecieveinvoicesidlist();
-		List<Map.Entry<String, String>> entryList = new ArrayList<>(mapid.entrySet());
-		Map.Entry<String, String> lastmapentry = entryList.get(entryList.size() - 1);
-		RecieveInvoiceDatabaseModel recievedinvoice = recieveinvrepo.findById(lastmapentry.getValue()).get();
+		ArrayList<String> recievedlist = invoice.getRecieveinvoicesidlist();
+		String id = recievedlist.get(recievedlist.size()-1);
+
+		RecieveInvoiceDatabaseModel recievedinvoice = recieveinvrepo.findById(id).get();
 		
 		
-		response.put("LatestInvoiceObjectId", lastmapentry.getValue());	
+		response.put("LatestInvoiceObjectId", id);	
 		response.put("DATETIME",recievedinvoice.getRecievedinvoices().getForwardRevertDate().toString());
 		response.put("InvoiceInboxObject", recievedinvoice);
 		response.put("Inboxobject", recievedinvoice.getRecievedinvoices());

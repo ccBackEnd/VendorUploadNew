@@ -5,7 +5,6 @@ import java.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.annotation.Id;
 
-import com.application.main.Inboxmodel.InvoicesHistory;
 import com.application.main.PaymentRepositories.PaymentDetailsRepository;
 import com.application.main.Paymentmodel.Paymentbreakup;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -31,7 +30,9 @@ public class InvoiceDTO {
 	private String invoiceNumber;
 	@JsonFormat(pattern = "yyyy-MM-dd")
 	private String invoiceDate;
+	@JsonFormat(pattern = "yyyy-MM-dd")
 	private String latestRecieviedDate;
+	@JsonFormat(pattern = "yyyy-MM-dd")
 	private String latestforwardedDate;
 	private String status;
 	private String deliveryPlant;

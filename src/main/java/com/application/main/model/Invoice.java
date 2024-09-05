@@ -2,7 +2,7 @@ package com.application.main.model;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -30,8 +30,8 @@ public class Invoice {
 	private String poNumber;
 	private String paymentType;
 	private String deliveryPlant;
-	private LinkedHashMap<String,String> recieveinvoicesidlist;
-	private LinkedHashMap<String,String> sentinvoicesidlist;
+	private ArrayList<String> sentinvoicesidlist;
+	private ArrayList<String> recieveinvoicesidlist;
 	@JsonFormat(pattern = "yyyy-MM-dd")
 	private LocalDate latestRecievingDate;
 	@JsonFormat(pattern = "yyyy-MM-dd")
