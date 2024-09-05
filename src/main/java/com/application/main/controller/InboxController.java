@@ -95,7 +95,7 @@ public class InboxController {
 			invoice.setStatus("sent");
 			invoice.setLatestforwardDate(LocalDate.now());
 			ArrayList<String> sentlist = invoice.getSentinvoicesidlist();
-			if (sentlist.size() == 0 || sentlist == null)
+			if (sentlist == null || sentlist.size() == 0 )
 				sentlist = new ArrayList<>();
 			sentlist.add(sidm.getId());
 			invoice.setSentinvoicesidlist(sentlist);
