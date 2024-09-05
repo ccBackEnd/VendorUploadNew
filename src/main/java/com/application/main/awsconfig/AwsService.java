@@ -186,7 +186,7 @@ public class AwsService {
 		}
 
 		invoice.setInvoiceNumber(invoiceNumber);
-		invoice.setCurrentDateTime(LocalDateTime.now().toString());
+		invoice.setCurrentDateTime(LocalDateTime.now());
 		System.err.println("-------------Invoice with : " + invoiceNumber + " Saved Successfully-------------------");
 
 		Optional<PoSummary> po = porepo.findByPoNumber(poNumber);

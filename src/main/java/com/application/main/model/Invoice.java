@@ -32,14 +32,14 @@ public class Invoice {
 	private String deliveryPlant;
 	private LinkedHashMap<String,String> recieveinvoicesidlist;
 	private LinkedHashMap<String,String> sentinvoicesidlist;
-	@JsonFormat(pattern = "yyyy-mm-dd")
+	@JsonFormat(pattern = "yyyy-MM-dd")
 	private LocalDate latestRecievingDate;
-	@JsonFormat(pattern = "yyyy-mm-dd")
+	@JsonFormat(pattern = "yyyy-MM-dd")
 	private LocalDate latestforwardDate;
-	@JsonFormat(pattern = "yyyy-mm-dd")
+	@JsonFormat(pattern = "yyyy-MM-dd")
 	private LocalDate invoiceDate;
 	@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-	private String currentDateTime;
+	private LocalDateTime currentDateTime;
 
 	private String invoiceNumber;
 	@Default
