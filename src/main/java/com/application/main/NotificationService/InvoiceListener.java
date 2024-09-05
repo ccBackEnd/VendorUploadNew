@@ -30,7 +30,9 @@ public class InvoiceListener {
 	
 	@KafkaListener(topics = "ForwardedInvoice")
 	public ResponseEntity<?> recievedInvoice(Invoice invoice) {
-		Map<String , Object> response = new HashMap<>();
+		try{
+			Map<String , Object> response = new HashMap<>();
+
 		LinkedHashMap<String,String> mapid = invoice.getSentinvoicesidlist();
 		List<Map.Entry<String, String>> entryList = new ArrayList<>(mapid.entrySet());
 		Map.Entry<String, String> lastmapentry = entryList.get(entryList.size() - 1);
@@ -43,13 +45,17 @@ public class InvoiceListener {
 		response.put("Inboxobject", sentinvoice.getSentinvoice());
 		
 		return ResponseEntity.ok(response);
-		
+		}catch(Exception e) {
+			e.printStackTrace();
+			return ResponseEntity.ok(e);
+		}
 	}
 	
 	
 	
 	@KafkaListener(topics = "RevertedInvoice")
 	public ResponseEntity<?> recieve(Invoice invoice ) {
+		try {
 		Map<String , Object> response = new HashMap<>();
 		LinkedHashMap<String,String> mapid = invoice.getRecieveinvoicesidlist();
 		List<Map.Entry<String, String>> entryList = new ArrayList<>(mapid.entrySet());
@@ -64,6 +70,11 @@ public class InvoiceListener {
 		
 		return ResponseEntity.ok(response);
 		
+	}
+		catch(Exception e) {
+			e.printStackTrace();			
+			return ResponseEntity.ok(e);
+		}
 	}
 
 }
