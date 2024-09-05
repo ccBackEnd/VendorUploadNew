@@ -95,10 +95,10 @@ public class InboxController {
 			sidm = sentinvrepo.save(sidm);
 			invoice.setStatus("sent");
 			invoice.setLatestforwardDate(LocalDate.now());
-			LinkedHashMap<LocalDateTime, String> map = invoice.getSentinvoicesidlist();
+			LinkedHashMap<String, String> map = invoice.getSentinvoicesidlist();
 			if (map == null)
-				map = new LinkedHashMap<LocalDateTime, String>();
-			map.put(LocalDateTime.now(), sidm.getId());
+				map = new LinkedHashMap<String, String>();
+			map.put(LocalDateTime.now().toString(), sidm.getId());
 			invoice.setSentinvoicesidlist(map);
 			kafkaInvoice.send("ForwardedInvoice", invoice);
 
@@ -149,10 +149,10 @@ public class InboxController {
 			invoice.setStatus("Reverted");
 			invoice.setLatestRecievingDate(LocalDate.now());
 
-			LinkedHashMap<LocalDateTime, String> map = invoice.getRecieveinvoicesidlist();
+			LinkedHashMap<String, String> map = invoice.getRecieveinvoicesidlist();
 			if (map == null)
-				map = new LinkedHashMap<LocalDateTime, String>();
-			map.put(LocalDateTime.now(), ridm.getId());
+				map = new LinkedHashMap<String, String>();
+			map.put(LocalDateTime.now().toString(), ridm.getId());
 			invoice.setRecieveinvoicesidlist(map);
 
 			if (remarks != null && !remarks.trim().isEmpty()) {

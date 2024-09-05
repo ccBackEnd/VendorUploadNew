@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.annotation.Id;
 
+import com.application.main.Inboxmodel.InvoicesHistory;
 import com.application.main.PaymentRepositories.PaymentDetailsRepository;
 import com.application.main.Paymentmodel.Paymentbreakup;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -40,6 +41,7 @@ public class InvoiceDTO {
 	private String paymentType;
 	private String invoiceurl;
 	private String invoiceAmount;
+//	private InvoicesHistory sentInvoices;
 
 //	public InvoiceDTO(String invoiceid, String poNumber, String invoiceNumber , LocalDate invoiceDate,
 //			String status, String deliveryPlant, String mobileNumber, String eic,Paymentbreakup paymentdetails, String paymentType, String invoiceurl,

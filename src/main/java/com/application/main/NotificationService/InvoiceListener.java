@@ -31,9 +31,9 @@ public class InvoiceListener {
 	@KafkaListener(topics = "ForwardedInvoice")
 	public ResponseEntity<?> recievedInvoice(Invoice invoice) {
 		Map<String , Object> response = new HashMap<>();
-		LinkedHashMap<LocalDateTime,String> mapid = invoice.getSentinvoicesidlist();
-		List<Map.Entry<LocalDateTime, String>> entryList = new ArrayList<>(mapid.entrySet());
-		Map.Entry<LocalDateTime, String> lastmapentry = entryList.get(entryList.size() - 1);
+		LinkedHashMap<String,String> mapid = invoice.getSentinvoicesidlist();
+		List<Map.Entry<String, String>> entryList = new ArrayList<>(mapid.entrySet());
+		Map.Entry<String, String> lastmapentry = entryList.get(entryList.size() - 1);
 		SentInvoicesDatabaseModel sentinvoice = sentinvrepo.findById(lastmapentry.getValue()).get();
 		
 		
@@ -51,9 +51,9 @@ public class InvoiceListener {
 	@KafkaListener(topics = "RevertedInvoice")
 	public ResponseEntity<?> recieve(Invoice invoice ) {
 		Map<String , Object> response = new HashMap<>();
-		LinkedHashMap<LocalDateTime,String> mapid = invoice.getRecieveinvoicesidlist();
-		List<Map.Entry<LocalDateTime, String>> entryList = new ArrayList<>(mapid.entrySet());
-		Map.Entry<LocalDateTime, String> lastmapentry = entryList.get(entryList.size() - 1);
+		LinkedHashMap<String,String> mapid = invoice.getRecieveinvoicesidlist();
+		List<Map.Entry<String, String>> entryList = new ArrayList<>(mapid.entrySet());
+		Map.Entry<String, String> lastmapentry = entryList.get(entryList.size() - 1);
 		RecieveInvoiceDatabaseModel recievedinvoice = recieveinvrepo.findById(lastmapentry.getValue()).get();
 		
 		
