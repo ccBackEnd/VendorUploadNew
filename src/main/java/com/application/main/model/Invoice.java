@@ -30,12 +30,17 @@ public class Invoice {
 	private String poNumber;
 	private String paymentType;
 	private String deliveryPlant;
+//	@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
 	private LinkedHashMap<LocalDateTime,String> recieveinvoicesidlist;
+//	@JsonFormat(pattern = "yyyy-mm-dd")
 	private LinkedHashMap<LocalDateTime,String> sentinvoicesidlist;
+	@JsonFormat(pattern = "yyyy-mm-dd")
 	private LocalDate latestRecievingDate;
+	@JsonFormat(pattern = "yyyy-mm-dd")
 	private LocalDate latestforwardDate;
 	@JsonFormat(pattern = "yyyy-mm-dd")
 	private LocalDate invoiceDate;
+	@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
 	private LocalDateTime currentDateTime;
 
 	private String invoiceNumber;

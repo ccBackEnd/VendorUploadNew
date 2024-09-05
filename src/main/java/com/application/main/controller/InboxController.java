@@ -95,13 +95,12 @@ public class InboxController {
 			sidm = sentinvrepo.save(sidm);
 			invoice.setStatus("sent");
 			invoice.setLatestforwardDate(LocalDate.now());
-
 			LinkedHashMap<LocalDateTime, String> map = invoice.getSentinvoicesidlist();
 			if (map == null)
 				map = new LinkedHashMap<LocalDateTime, String>();
 			map.put(LocalDateTime.now(), sidm.getId());
 			invoice.setSentinvoicesidlist(map);
-			kafkaInvoice.send("forwarded", invoice);
+			kafkaInvoice.send("ForwardedInvoice", invoice);
 
 			if (remarks != null && !remarks.trim().isEmpty()) {
 				Set<String> existingremarks = invoice.getRemarks();
