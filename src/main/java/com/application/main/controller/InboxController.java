@@ -20,8 +20,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -68,7 +68,8 @@ public class InboxController {
 	}
 
 	@PostMapping("/forwardinvoice")
-	public ResponseEntity<?> forwardInvoice(@RequestHeader("id") String id, @RequestParam("remarks") String remarks,
+	public ResponseEntity<?> forwardInvoice(@RequestHeader("id") String id, 
+			@RequestBody(required = false) String remarks,
 			@RequestParam(value = "fileinvoice", required = false) MultipartFile fileinvoice,
 			HttpServletRequest request) throws IOException, Exception {
 
@@ -88,7 +89,7 @@ public class InboxController {
 				url = s3service.uploadFile(token, fileinvoice, invoice.getInvoiceNumber(), username).getUrl();
 			}
 			InvoicesHistory historyinvoice = new InvoicesHistory(id, url, "forwarded", invoice.getInvoiceNumber(),
-					LocalDate.now().toString(), remarks);
+					LocalDate.now().toString(), remarks , "recieved from X"," sent to Y");
 			SentInvoicesDatabaseModel sidm = new SentInvoicesDatabaseModel(null, id, invoice.getInvoiceNumber(),
 					historyinvoice);
 			sidm = sentinvrepo.save(sidm);
@@ -119,8 +120,8 @@ public class InboxController {
 	}
 
 	@PostMapping("/revert")
-	public ResponseEntity<?> revertInvoice(@RequestParam("id") String id,
-			@RequestParam(value = "remarks", required = false) String remarks,
+	public ResponseEntity<?> revertInvoice(@RequestHeader(value = "id") String id,
+			@RequestBody(required = false) String remarks,
 			@RequestParam(value = "fileinvoice", required = false) MultipartFile fileinvoice,
 			HttpServletRequest request) throws IOException, Exception {
 
@@ -141,7 +142,7 @@ public class InboxController {
 				url = s3service.uploadFile(token, fileinvoice, invoice.getInvoiceNumber(), username).getUrl();
 			}
 			InvoicesHistory historyinvoice = new InvoicesHistory(id, url, "reverted", invoice.getInvoiceNumber(),
-					LocalDate.now().toString(), remarks);
+					LocalDate.now().toString(), remarks,"recievedfrom x"," recievedfrom y");
 			RecieveInvoiceDatabaseModel ridm = new RecieveInvoiceDatabaseModel(null, id, invoice.getInvoiceNumber(),
 					historyinvoice);
 			ridm = recieveinvrepo.save(ridm);
@@ -171,13 +172,11 @@ public class InboxController {
 		}
 	}
 
-	@GetMapping("/Inbox/History/{invoiceNumber}")
-	public ResponseEntity<?> getHistory(@PathVariable String invoiceNumber, @RequestHeader("id") String id) {
+	@GetMapping("/Inbox/History")
+	public ResponseEntity<?> getHistory(@RequestParam(value = "invoiceNumber") String invoiceNumber, @RequestHeader("id") String id) {
 
 		List<SentInvoicesDatabaseModel> sentInvoices = sentinvrepo.findByInvoicenumber(invoiceNumber);
 		List<InvoicesHistory> invhistorylist1 = sentInvoices.stream().map(SentInvoicesDatabaseModel::getSentinvoice) // Extract
-																														// sentinvoice
-																														// field
 				.collect(Collectors.toList());
 
 		List<RecieveInvoiceDatabaseModel> recievedInvoices = recieveinvrepo.findByInvoicenumber(invoiceNumber);

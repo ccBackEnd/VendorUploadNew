@@ -13,18 +13,21 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Document(collection = "Userdetails")
+@Document(collection = "User_details")
 public class UserDTO {
-	
+
 	@Id
 	private String id;
 
 	private String username;
 	private String firstName;
 	private String lastName;
+	private String userCode;
+	private String email;
 	private String password;
-	private Set<String> userroles;
-	private Set<String> eicdepartments;
+	private Set<String> userRoles;
+	private Set<String> eicDepartments;
+
 	public UserDTO(String username, String firstName, String lastName, String password, Set<String> userroles,
 			Set<String> eicdepartments) {
 		super();
@@ -32,11 +35,8 @@ public class UserDTO {
 		this.firstName = firstName;
 		this.lastName = lastName;
 		this.password = password;
-		this.userroles = userroles;
-		this.eicdepartments = eicdepartments;
+		this.userRoles = userroles;
+		this.eicDepartments = eicdepartments;
 	}
-	
 
-	
-	
 }

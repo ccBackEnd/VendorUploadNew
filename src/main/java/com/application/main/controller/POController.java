@@ -43,7 +43,7 @@ import com.application.main.PaymentRepositories.PaymentDetailsRepository;
 import com.application.main.Repositories.DocDetailsRepository;
 import com.application.main.Repositories.InvoiceRepository;
 import com.application.main.Repositories.PoSummaryRepository;
-import com.application.main.Repositories.VendorUserRepository;
+import com.application.main.Repositories.LoginUserRepository;
 import com.application.main.awsconfig.AWSClientConfigService;
 import com.application.main.awsconfig.AwsService;
 import com.application.main.credentialmodel.CipherEncDec;
@@ -77,7 +77,7 @@ public class POController {
 	private final MongoTemplate mongoTemplate;
 
 	@Autowired
-	VendorUserRepository vendoruserrepo;
+	LoginUserRepository vendoruserrepo;
 	@Autowired
 	InvoiceRepository invoiceRepository;
 

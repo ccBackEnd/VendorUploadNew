@@ -20,5 +20,7 @@ public class InvoicesHistory {
 	private String invoiceNo;
 	private String forwardRevertDate;
 	private String remarks;
+	private String recievedFrom;
+	private String sentto;
 
 }

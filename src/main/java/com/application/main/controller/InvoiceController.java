@@ -36,7 +36,7 @@ import com.application.main.PaymentRepositories.PaymentDetailsRepository;
 import com.application.main.Repositories.DocDetailsRepository;
 import com.application.main.Repositories.InvoiceRepository;
 import com.application.main.Repositories.PoSummaryRepository;
-import com.application.main.Repositories.VendorUserRepository;
+import com.application.main.Repositories.LoginUserRepository;
 import com.application.main.awsconfig.AwsService;
 import com.application.main.credentialmodel.DocDetails;
 import com.application.main.model.Invoice;
@@ -65,7 +65,7 @@ public class InvoiceController {
 	DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
 	@Autowired
-	VendorUserRepository vendoruserrepo;
+	LoginUserRepository vendoruserrepo;
 
 	@Autowired
 	InvoiceRepository invoiceRepository;
