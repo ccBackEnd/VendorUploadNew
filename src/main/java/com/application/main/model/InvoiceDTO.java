@@ -79,11 +79,12 @@ public class InvoiceDTO {
 		this.id = invoiceid;
 		this.poNumber = poNumber;
 		this.invoiceNumber = invoiceNumber;
-		this.latestforwardDate = forwardeddate.format(dateFormatter);
+		
+		if(forwardeddate!=null)this.latestforwardDate = forwardeddate.format(dateFormatter);
 		this.latestforwardTime = forwardtime;
-		this.latestRecievingDate = revertdate.format(dateFormatter);
+		if(revertdate!=null)this.latestRecievingDate = revertdate.format(dateFormatter);
 		this.latestRecievedTime = recievingtime;
-		this.invoiceDate = invoiceDate.format(dateFormatter);
+		if(invoiceDate!=null)this.invoiceDate = invoiceDate.format(dateFormatter);
 		this.invoiceTime = invoiceDate.format(timeFormatter);
 		this.paymentdetails = paymentdetails;
 		this.status = status;
