@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.Builder.Default;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -25,6 +26,8 @@ public class UserDTO {
 	private String userCode;
 	private String email;
 	private String password;
+	@Default
+	private boolean isEic = true;
 	private Set<String> userRoles;
 	private Set<String> eicDepartments;
 
@@ -38,5 +41,4 @@ public class UserDTO {
 		this.userRoles = userroles;
 		this.eicDepartments = eicdepartments;
 	}
-
 }

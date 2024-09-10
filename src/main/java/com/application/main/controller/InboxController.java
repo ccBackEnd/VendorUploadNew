@@ -1,7 +1,7 @@
 package com.application.main.controller;
 
 import java.io.IOException;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,12 +29,12 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.application.main.Inboxmodel.InvoicesHistory;
-import com.application.main.Inboxmodel.RecieveInvoiceDatabaseModel;
-import com.application.main.Inboxmodel.SentInvoicesDatabaseModel;
-import com.application.main.InboxmodelRepository.RecievedInvoiceRepository;
-import com.application.main.InboxmodelRepository.SentInvoicesRepository;
+import com.application.main.Inboxmodel.InvoicesHistoryCollection;
+import com.application.main.InboxmodelRepository.InvoiceHistoryRepository;
 import com.application.main.Repositories.InvoiceRepository;
+import com.application.main.Repositories.LoginUserRepository;
 import com.application.main.awsconfig.AwsService;
+import com.application.main.credentialmodel.UserDTO;
 import com.application.main.model.Invoice;
 import com.application.main.model.InvoiceDTO;
 
@@ -47,15 +47,16 @@ public class InboxController {
 
 	@Autowired
 	InvoiceRepository invoiceRepository;
+	
+	@Autowired
+	LoginUserRepository loginrepository;
 
 	@Autowired
 	AwsService s3service;
 
 	@Autowired
-	SentInvoicesRepository sentinvrepo;
+	InvoiceHistoryRepository invhistoryrepo;
 
-	@Autowired
-	RecievedInvoiceRepository recieveinvrepo;
 
 	@Autowired
 	private KafkaTemplate<String, Invoice> kafkaInvoice;
@@ -72,7 +73,7 @@ public class InboxController {
 			@RequestBody(required = false) String remarks,
 			@RequestParam(value = "fileinvoice", required = false) MultipartFile fileinvoice,
 			HttpServletRequest request) throws IOException, Exception {
-
+		String status = "Sent";
 		// Retrieve the invoice from the database using the invoiceId
 		Optional<Invoice> invoiceOptional = invoiceRepository.findById(id);
 		if (invoiceOptional.isEmpty() || !invoiceOptional.isPresent()) {
@@ -84,23 +85,43 @@ public class InboxController {
 			String token = request.getHeader("Authorization").replace("Bearer ", "");
 			String username = s3service.getUserNameFromToken(token);
 			s3service.createBucket(token, username + "history");
+			
 			String url = invoice.getInvoiceurl();
 			if (fileinvoice != null) {
 				url = s3service.uploadFile(token, fileinvoice, invoice.getInvoiceNumber(), username).getUrl();
 			}
-			InvoicesHistory historyinvoice = new InvoicesHistory(id, url, "forwarded", invoice.getInvoiceNumber(),
-					LocalDate.now().toString(), remarks , "recieved from X"," sent to Y");
-			SentInvoicesDatabaseModel sidm = new SentInvoicesDatabaseModel(null, id, invoice.getInvoiceNumber(),
-					historyinvoice);
-			sidm = sentinvrepo.save(sidm);
-			invoice.setStatus("sent");
-			invoice.setLatestforwardDate(LocalDate.now());
-			ArrayList<String> sentlist = invoice.getSentinvoicesidlist();
-			if (sentlist == null || sentlist.size() == 0 )
-				sentlist = new ArrayList<>();
-			sentlist.add(sidm.getId());
-			invoice.setSentinvoicesidlist(sentlist);
-			kafkaInvoice.send("ForwardedInvoice", invoice);
+			Optional<UserDTO> user = loginrepository.findByUsername(username);
+			InvoicesHistory historyinvoice = new InvoicesHistory(url, invoice.getInvoiceNumber(), remarks, username, "sent to Y");
+			InvoicesHistoryCollection ihc = new InvoicesHistoryCollection(id, invoice.getInvoiceNumber(),LocalDateTime.now(),
+					null);
+			
+			if(user.get().isEic()== true) { 
+				ihc.setSent(false);
+				ihc.setRevert(true);
+				status = "reverted";
+				historyinvoice.setStatus(status);
+				invoice.setStatus(status);
+				invoice.setRevertCount(invoice.getRevertCount()+1);
+				invoice.setDatetimeofHistory(LocalDateTime.now(), false);
+			}
+			else
+			{
+				ihc.setSent(true);
+				ihc.setRevert(false);
+				historyinvoice.setStatus(status);
+				invoice.setStatus(status);
+				invoice.setSentCount(invoice.getSentCount() + 1);
+				invoice.setDatetimeofHistory(LocalDateTime.now(), true);
+			}
+			ihc.setInvoicehistory(historyinvoice);
+			ihc = invhistoryrepo.save(ihc);
+			invoice.setStatus(status);
+			ArrayList<String> sentrevertlist = invoice.getSentrevertidlist();
+			if (sentrevertlist == null || sentrevertlist.size() == 0 )
+				sentrevertlist = new ArrayList<>();
+			sentrevertlist.add(ihc.getId());
+			invoice.setSentrevertidlist(sentrevertlist);
+			kafkaInvoice.send("Invoiceinbox", invoice);
 
 			if (remarks != null && !remarks.trim().isEmpty()) {
 				Set<String> existingremarks = invoice.getRemarks();
@@ -119,78 +140,19 @@ public class InboxController {
 		}
 	}
 
-	@PostMapping("/revert")
-	public ResponseEntity<?> revertInvoice(@RequestHeader("id") String id,
-			@RequestBody(required = false) String remarks,
-			@RequestParam(value = "fileinvoice", required = false) MultipartFile fileinvoice,
-			HttpServletRequest request) throws IOException, Exception {
-
-		// Retrieve the invoice from the database using the invoiceId
-		Optional<Invoice> invoiceOptional = invoiceRepository.findById(id);
-		if (invoiceOptional.isEmpty() || !invoiceOptional.isPresent()) {
-			return ResponseEntity.notFound().build();
-		}
-		Invoice invoice = invoiceOptional.get();
-		// Revert the invoice to the original user and update roleName with username
-		try {
-			String token = request.getHeader("Authorization").replace("Bearer ", "");
-			String username = s3service.getUserNameFromToken(token);
-			// Retrieve the invoice from the database using the invoiceId
-			s3service.createBucket(token, "reverthistory");
-			String url = invoice.getInvoiceurl();
-			if (fileinvoice != null) {
-				url = s3service.uploadFile(token, fileinvoice, invoice.getInvoiceNumber(), username).getUrl();
-			}
-			InvoicesHistory historyinvoice = new InvoicesHistory(id, url, "reverted", invoice.getInvoiceNumber(),
-					LocalDate.now().toString(), remarks,"recievedfrom x"," recievedfrom y");
-			RecieveInvoiceDatabaseModel ridm = new RecieveInvoiceDatabaseModel(null, id, invoice.getInvoiceNumber(),
-					historyinvoice);
-			ridm = recieveinvrepo.save(ridm);
-			invoice.setStatus("Reverted");
-			invoice.setLatestRecievingDate(LocalDate.now());
-
-			ArrayList<String> recievedlist = invoice.getRecieveinvoicesidlist();
-			if (recievedlist == null)
-				recievedlist = new ArrayList<>();
-			recievedlist.add(ridm.getId());
-			invoice.setRecieveinvoicesidlist(recievedlist);
-
-			if (remarks != null && !remarks.trim().isEmpty()) {
-				Set<String> existingremarks = invoice.getRemarks();
-				if (existingremarks.isEmpty() || existingremarks == null)
-					invoice.setRemarks(Set.of(remarks));
-				existingremarks.add(remarks);
-				invoice.setRemarks(existingremarks);
-			}
-			invoice.setRevertCount(invoice.getRevertCount() + 1);
-			kafkaInvoice.send("RevertedInvoice", invoice);
-			Invoice revertedInvoice = invoiceRepository.save(invoice);
-			return ResponseEntity.ok("Reverted Successfully");
-		} catch (Exception e) {
-			e.printStackTrace(); // Log the exception
-			return ResponseEntity.ok(e);
-		}
-	}
 
 	@GetMapping("/Inbox/History")
 	public ResponseEntity<?> getHistory(@RequestParam(value = "invoiceNumber") String invoiceNumber, @RequestHeader("id") String id) {
 
-		List<SentInvoicesDatabaseModel> sentInvoices = sentinvrepo.findByInvoicenumber(invoiceNumber);
-		List<InvoicesHistory> invhistorylist1 = sentInvoices.stream().map(SentInvoicesDatabaseModel::getSentinvoice) // Extract
-				.collect(Collectors.toList());
-
-		List<RecieveInvoiceDatabaseModel> recievedInvoices = recieveinvrepo.findByInvoicenumber(invoiceNumber);
-		List<InvoicesHistory> invhistorylist2 = recievedInvoices.stream()
-				.map(RecieveInvoiceDatabaseModel::getRecievedinvoices) // Extract sentinvoice field
+		List<InvoicesHistoryCollection> sentInvoices = invhistoryrepo.findByInvoicenumberOrderByForwardRevertDateDesc(invoiceNumber);
+		List<InvoicesHistory> invhistorylist1 = sentInvoices.stream().map(InvoicesHistoryCollection::getInvoicehistory) // Extract
 				.collect(Collectors.toList());
 		Map<String, Object> response = new HashMap<>();
 
-		response.put("sentinvoices", invhistorylist1);
-		response.put("recievedinvoices", invhistorylist2);
+		response.put("history", invhistorylist1);
 		if (response.isEmpty() || response == null)
 			return ResponseEntity.ok("");
 		return ResponseEntity.ok(response);
-
 	}
 
 	@GetMapping("/InboxData")

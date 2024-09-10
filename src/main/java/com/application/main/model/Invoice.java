@@ -2,6 +2,8 @@ package com.application.main.model;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -24,20 +26,29 @@ import lombok.NoArgsConstructor;
 @Builder
 @Document(collection = "Invoice")
 public class Invoice {
+	
+	
 
 	@Id
 	private String id;
 	private String poNumber;
 	private String paymentType;
 	private String deliveryPlant;
-	private ArrayList<String> sentinvoicesidlist;
-	private ArrayList<String> recieveinvoicesidlist;
-	@JsonFormat(pattern = "yyyy-MM-dd")
-	private LocalDate latestRecievingDate;
-	@JsonFormat(pattern = "yyyy-MM-dd")
-	private LocalDate latestforwardDate;
+	private ArrayList<String> sentrevertidlist;
+	
+	@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+	private LocalDateTime latestforwardDate;
+	private String latestforwardTime;
+	
+	@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+	private LocalDateTime latestRecievingDate;
+	private String latestRecievedTime;
+	
 	@JsonFormat(pattern = "yyyy-MM-dd")
 	private LocalDate invoiceDate;
+	
+	private String invoiceTime;
+	
 	@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
 	private LocalDateTime currentDateTime;
 
@@ -79,5 +90,23 @@ public class Invoice {
 		super();
 		this.deliveryPlant = deliveryPlant;
 	}
+	public void setDatetimeofHistory(LocalDateTime isoDate , boolean isSent) {
+		try {
+			ZonedDateTime zdt = ZonedDateTime.parse(isoDate.toString(), DateTimeFormatter.ISO_DATE_TIME);
+			DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+			if(isSent) {
+			this.latestforwardDate = isoDate;
+			this.latestforwardTime = zdt.format(timeFormatter);
+			}
+			else {
+				this.latestRecievingDate = isoDate;
+				this.latestRecievedTime = zdt.format(timeFormatter);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+	}
+	
 
 }
