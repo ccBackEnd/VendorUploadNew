@@ -570,7 +570,7 @@ public class InvoiceController {
 				invoiceobject.getDeliveryPlant(), invoiceobject.getMobileNumber(), invoiceobject.getEic(),
 				paymentrepo.findByInvoiceNumber(invoiceobject.getInvoiceNumber()), invoiceobject.getPaymentType(),
 				invoiceobject.getInvoiceurl(), invoiceobject.getInvoiceAmount(), invoiceobject.getLatestRecievingDate(),
-				invoiceobject.getLatestforwardDate()));
+				invoiceobject.getLatestforwardDate(),invoiceobject.getLatestforwardTime(),invoiceobject.getLatestRecievedTime()));
 	}
 
 }

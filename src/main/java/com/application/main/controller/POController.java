@@ -192,7 +192,7 @@ public class POController {
 					.map(iv -> new InvoiceDTO(iv.getId(), iv.getPoNumber(), iv.getInvoiceNumber(), iv.getInvoiceDate(),
 							iv.getStatus(), iv.getDeliveryPlant(), iv.getMobileNumber(), iv.getEic(), null,
 							iv.getPaymentType(), iv.getInvoiceurl(), iv.getInvoiceAmount(), iv.getLatestRecievingDate(),
-							iv.getLatestforwardDate()))
+							iv.getLatestforwardDate(), iv.getLatestforwardTime(),iv.getLatestRecievedTime() ))
 					.collect(Collectors.toList());
 		} catch (Exception e) {
 			e.printStackTrace();

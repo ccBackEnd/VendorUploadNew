@@ -31,11 +31,10 @@ public class InvoicesHistoryCollection {
 	private String timeofarrival;
 	private String dateofarrival;
 	private InvoicesHistory invoicehistory;
-
+	final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+	final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 	public void setDatetimeofHistory(LocalDateTime isoDate) {
 		try {
-			DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-			DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 			this.dateofarrival = isoDate.format(dateFormatter);
 			this.timeofarrival = isoDate.format(timeFormatter);
 		} catch (Exception e) {

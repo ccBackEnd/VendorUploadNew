@@ -48,42 +48,43 @@ public class InvoiceDTO {
 	private String invoiceAmount;
 	private String invoiceTime;
 	
-	public void setTime(LocalDate date) {
-		DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-		DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-		this.invoiceDate = date.format(dateFormatter);
-		this.invoiceTime = date.format(timeFormatter);
-	}
+	final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+	final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 	
-	public void setDatetimeofHistory(LocalDateTime isoDate , boolean isSent) {
-		try {
-			DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-			DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-			if(isSent) {
-			this.latestforwardDate = isoDate.format(dateFormatter);
-			this.latestforwardTime = isoDate.format(timeFormatter);
-			}
-			else {
-				this.latestRecievingDate = isoDate.format(dateFormatter);
-				this.latestRecievedTime = isoDate.format(timeFormatter);
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
-	}
+//	public InvoiceDTO(String invoiceid, String poNumber, String invoiceNumber , LocalDate invoiceDate,
+//			String status, String deliveryPlant, String mobileNumber, String eic,Paymentbreakup paymentdetails, String paymentType, String invoiceurl,
+//			String invoiceAmount,LocalDateTime revertdate , LocalDateTime forwardeddate ) {
+//		super();
+//		this.id = invoiceid;
+//		this.poNumber = poNumber;
+//		this.invoiceNumber = invoiceNumber;
+//		if(revertdate!=null) setDatetimeofHistory(revertdate, false);
+//		else this.latestRecievingDate="";
+//		if(forwardeddate!=null) setDatetimeofHistory(forwardeddate, true);
+//		else this.latestforwardDate=invoiceDate.toString();
+//		setTime(invoiceDate);
+//		this.paymentdetails = paymentdetails;
+//		this.status = status;
+//		this.deliveryPlant = deliveryPlant;
+//		this.mobileNumber = mobileNumber;
+//		this.eic = eic;
+//		this.paymentType = paymentType;
+//		this.invoiceurl = invoiceurl;
+//		this.invoiceAmount = invoiceAmount;
+//	}
 	public InvoiceDTO(String invoiceid, String poNumber, String invoiceNumber , LocalDate invoiceDate,
 			String status, String deliveryPlant, String mobileNumber, String eic,Paymentbreakup paymentdetails, String paymentType, String invoiceurl,
-			String invoiceAmount,LocalDateTime revertdate , LocalDateTime forwardeddate) {
+			String invoiceAmount,LocalDateTime revertdate , LocalDateTime forwardeddate , String forwardtime,String recievingtime) {
 		super();
 		this.id = invoiceid;
 		this.poNumber = poNumber;
 		this.invoiceNumber = invoiceNumber;
-		if(revertdate!=null) setDatetimeofHistory(revertdate, false);
-		else this.latestRecievingDate="";
-		if(forwardeddate!=null) setDatetimeofHistory(forwardeddate, true);
-		else this.latestforwardDate=invoiceDate.toString();
-		setTime(invoiceDate);
+		this.latestforwardDate = forwardeddate.format(dateFormatter);
+		this.latestforwardTime = forwardtime;
+		this.latestRecievingDate = revertdate.format(dateFormatter);
+		this.latestRecievedTime = recievingtime;
+		this.invoiceDate = invoiceDate.format(dateFormatter);
+		this.invoiceTime = invoiceDate.format(timeFormatter);
 		this.paymentdetails = paymentdetails;
 		this.status = status;
 		this.deliveryPlant = deliveryPlant;
