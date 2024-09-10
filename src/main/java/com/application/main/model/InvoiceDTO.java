@@ -2,7 +2,6 @@ package com.application.main.model;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,11 +33,9 @@ public class InvoiceDTO {
 	
 	@JsonFormat(pattern = "yyyy-MM-dd")
 	private String invoiceDate;
-	@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
 	private String latestforwardDate;
 	private String latestforwardTime;
 	
-	@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
 	private String latestRecievingDate;
 	private String latestRecievedTime;
 	private String status;
@@ -52,25 +49,23 @@ public class InvoiceDTO {
 	private String invoiceTime;
 	
 	public void setTime(LocalDate date) {
-		ZonedDateTime zdt = ZonedDateTime.parse(date.toString(), DateTimeFormatter.ISO_DATE_TIME);
 		DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 		DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-		this.invoiceDate = zdt.format(dateFormatter);
-		this.invoiceTime = zdt.format(timeFormatter);
+		this.invoiceDate = date.format(dateFormatter);
+		this.invoiceTime = date.format(timeFormatter);
 	}
 	
-	public void setDatetimeofHistory(String isoDate , boolean isSent) {
+	public void setDatetimeofHistory(LocalDateTime isoDate , boolean isSent) {
 		try {
-			ZonedDateTime zdt = ZonedDateTime.parse(isoDate, DateTimeFormatter.ISO_DATE_TIME);
 			DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 			DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 			if(isSent) {
-			this.latestforwardDate = zdt.format(dateFormatter);
-			this.latestforwardTime = zdt.format(timeFormatter);
+			this.latestforwardDate = isoDate.format(dateFormatter);
+			this.latestforwardTime = isoDate.format(timeFormatter);
 			}
 			else {
-				this.latestRecievingDate = zdt.format(dateFormatter);
-				this.latestRecievedTime = zdt.format(timeFormatter);
+				this.latestRecievingDate = isoDate.format(dateFormatter);
+				this.latestRecievedTime = isoDate.format(timeFormatter);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -84,10 +79,10 @@ public class InvoiceDTO {
 		this.id = invoiceid;
 		this.poNumber = poNumber;
 		this.invoiceNumber = invoiceNumber;
-		if(revertdate!=null) setDatetimeofHistory(revertdate.toString(), false);
+		if(revertdate!=null) setDatetimeofHistory(revertdate, false);
 		else this.latestRecievingDate="";
-		if(forwardeddate!=null) setDatetimeofHistory(forwardeddate.toString(), true);
-		else setDatetimeofHistory(invoiceDate.toString(), true);
+		if(forwardeddate!=null) setDatetimeofHistory(forwardeddate, true);
+		else this.latestforwardDate=invoiceDate.toString();
 		setTime(invoiceDate);
 		this.paymentdetails = paymentdetails;
 		this.status = status;

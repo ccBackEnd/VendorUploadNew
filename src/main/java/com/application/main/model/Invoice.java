@@ -92,15 +92,14 @@ public class Invoice {
 	}
 	public void setDatetimeofHistory(LocalDateTime isoDate , boolean isSent) {
 		try {
-			ZonedDateTime zdt = ZonedDateTime.parse(isoDate.toString(), DateTimeFormatter.ISO_DATE_TIME);
 			DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 			if(isSent) {
 			this.latestforwardDate = isoDate;
-			this.latestforwardTime = zdt.format(timeFormatter);
+			this.latestforwardTime = isoDate.format(timeFormatter);
 			}
 			else {
 				this.latestRecievingDate = isoDate;
-				this.latestRecievedTime = zdt.format(timeFormatter);
+				this.latestRecievedTime = isoDate.format(timeFormatter);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
