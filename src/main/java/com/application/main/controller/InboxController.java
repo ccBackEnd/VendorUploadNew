@@ -20,7 +20,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -69,11 +68,10 @@ public class InboxController {
 
 	@PostMapping("/forwardinvoice")
 	public ResponseEntity<?> forwardInvoice(@RequestHeader("id") String id, 
-			@RequestBody(required = false) Map<String,Object> map,
+			@RequestParam(value = "remarks")String remarks,
 			@RequestParam(value = "fileinvoice", required = false) MultipartFile fileinvoice,
 			HttpServletRequest request) throws IOException, Exception {
 		
-		String remarks =  map.get("remarks").toString();
 		System.out.println("------------------------------");
 		System.out.println(remarks);
 		System.out.println("------------------------------");
