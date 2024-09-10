@@ -144,12 +144,12 @@ public class InboxController {
 	@GetMapping("/Inbox/History")
 	public ResponseEntity<?> getHistory(@RequestParam(value = "invoiceNumber") String invoiceNumber, @RequestHeader("id") String id) {
 
-		List<InvoicesHistoryCollection> sentInvoices = invhistoryrepo.findByInvoicenumberOrderByForwardRevertDateDesc(invoiceNumber);
-		List<InvoicesHistory> invhistorylist1 = sentInvoices.stream().map(InvoicesHistoryCollection::getInvoicehistory) // Extract
-				.collect(Collectors.toList());
+		List<InvoicesHistoryCollection> invoicesretrieved = invhistoryrepo.findByInvoicenumberOrderByForwardRevertDateDesc(invoiceNumber);
+//		List<InvoicesHistory> invhistorylist1 = sentInvoices.stream().map(InvoicesHistoryCollection::getInvoicehistory) // Extract
+//				.collect(Collectors.toList());
 		Map<String, Object> response = new HashMap<>();
 
-		response.put("history", invhistorylist1);
+		response.put("history", invoicesretrieved);
 		if (response.isEmpty() || response == null)
 			return ResponseEntity.ok("");
 		return ResponseEntity.ok(response);
@@ -162,7 +162,7 @@ public class InboxController {
 		Pageable pageable = PageRequest.of(page, size);
 
 		// Retrieve invoices with status "reverted"
-		Page<InvoiceDTO> invoicepage = invoiceRepository.findByUsernameAndStatus(username, "Reverted", pageable);
+		Page<InvoiceDTO> invoicepage = invoiceRepository.findByUsernameAndStatusIgnoreCase(username, "Reverted", pageable);
 		if (!invoicepage.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.OK).body(invoicepage);
 		} else {

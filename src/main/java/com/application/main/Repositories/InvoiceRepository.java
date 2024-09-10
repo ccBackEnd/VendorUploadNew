@@ -48,7 +48,7 @@ public interface InvoiceRepository extends MongoRepository<Invoice, String> {
 
 	long countByUsername(String username);
 
-	Page<InvoiceDTO> findByUsernameAndStatus(String username, String string, Pageable pageable);
+	Page<InvoiceDTO> findByUsernameAndStatusIgnoreCase(String username, String string, Pageable pageable);
 
 	long countByUsernameAndStatus(String username, String string);
 	// In your InvoiceRepository interface
