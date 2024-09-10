@@ -46,7 +46,6 @@ public class InvoiceDTO {
 	private String paymentType;
 	private String invoiceurl;
 	private String invoiceAmount;
-	private String invoiceTime;
 	
 	final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 	final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
@@ -85,7 +84,7 @@ public class InvoiceDTO {
 		if(revertdate!=null)this.latestRecievingDate = revertdate.format(dateFormatter);
 		this.latestRecievedTime = recievingtime;
 		if(invoiceDate!=null)this.invoiceDate = invoiceDate.format(dateFormatter);
-		this.invoiceTime = invoiceDate.format(timeFormatter);
+//		this.invoiceTime = invoiceDate.format(timeFormatter);
 		this.paymentdetails = paymentdetails;
 		this.status = status;
 		this.deliveryPlant = deliveryPlant;
