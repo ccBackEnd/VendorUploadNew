@@ -32,13 +32,12 @@ public class InvoicesHistoryCollection {
 	private String dateofarrival;
 	private InvoicesHistory invoicehistory;
 
-	public void setDatetimeofHistory(String isoDate) {
+	public void setDatetimeofHistory(LocalDateTime isoDate) {
 		try {
-			ZonedDateTime zdt = ZonedDateTime.parse(isoDate, DateTimeFormatter.ISO_DATE_TIME);
-			DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+			DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 			DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-			this.dateofarrival = zdt.format(dateFormatter);
-			this.timeofarrival = zdt.format(timeFormatter);
+			this.dateofarrival = isoDate.format(dateFormatter);
+			this.timeofarrival = isoDate.format(timeFormatter);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -52,7 +51,6 @@ public class InvoicesHistoryCollection {
 		this.invoicenumber = invoicenumber;
 		this.forwardRevertDate = forwardRevertDate;
 		this.invoicehistory = invoicehistory;
-		setDatetimeofHistory(forwardRevertDate.toString());
 	}
 
 }

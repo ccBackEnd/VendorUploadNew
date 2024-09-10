@@ -96,6 +96,7 @@ public class InboxController {
 			InvoicesHistory historyinvoice = new InvoicesHistory(url, invoice.getInvoiceNumber(), remarks, username, "sent to Y");
 			InvoicesHistoryCollection ihc = new InvoicesHistoryCollection(id, invoice.getInvoiceNumber(),LocalDateTime.now(),
 					null);
+			ihc.setDatetimeofHistory(LocalDateTime.now());
 			
 			if(user.get().isEic()== true) { 
 				ihc.setSent(false);
