@@ -69,9 +69,14 @@ public class InboxController {
 
 	@PostMapping("/forwardinvoice")
 	public ResponseEntity<?> forwardInvoice(@RequestHeader("id") String id, 
-			@RequestBody(required = false) String remarks,
+			@RequestBody(required = false) Map<String,Object> map,
 			@RequestParam(value = "fileinvoice", required = false) MultipartFile fileinvoice,
 			HttpServletRequest request) throws IOException, Exception {
+		
+		String remarks =  map.get("remarks").toString();
+		System.out.println("------------------------------");
+		System.out.println(remarks);
+		System.out.println("------------------------------");
 		String status = "Sent";
 		// Retrieve the invoice from the database using the invoiceId
 		Optional<Invoice> invoiceOptional = invoiceRepository.findById(id);
