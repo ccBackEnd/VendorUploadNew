@@ -324,10 +324,10 @@ public class InvoiceController {
 		String token = request.getHeader("Authorization").replace("Bearer ", "");
 		String username = s3service.getUserNameFromToken(token);
 		Page<InvoiceDTO> invoicesByUsername = convertInvoicetoInvoiceDTO(
-				convertListToPage(invoiceRepository.findByUsername(username), page, size));
+				convertListToPage(invoiceRepository.findByUsernameContaining(username), page, size));
 		long invoiceCountByUsername = invoicesByUsername.getTotalElements();
 		// Calculate inbox count based on username and status "reverted"
-		long inboxCountReverted = invoiceRepository.countByUsernameAndStatus(username, "reverted");
+		long inboxCountReverted = invoiceRepository.countByUsernameContainingAndStatus(username, "reverted");
 		Map<String, Long> response = new HashMap<>();
 		response.put("InvoiceCountTotalof_" + username, invoiceCountByUsername);
 		response.put("inboxCount", inboxCountReverted);
@@ -347,7 +347,7 @@ public class InvoiceController {
 		}
 		if (username != null && poNumber == null && invoiceNumber == null) {
 			return convertInvoicetoInvoiceDTO(
-					convertListToPage(invoiceRepository.findByUsername(username), page, size));
+					convertListToPage(invoiceRepository.findByUsernameContaining(username), page, size));
 		}
 
 		// Find by poNumber only
@@ -367,12 +367,12 @@ public class InvoiceController {
 
 		// Find by poNumber and username
 		if (poNumber != null && username != null) {
-			return invoiceRepository.findByUsernameAndPoNumber(username, poNumber, pageable);
+			return invoiceRepository.findByUsernameContainingAndPoNumber(username, poNumber, pageable);
 		}
 
 		// Find by username and invoiceNumber
 		if (username != null && invoiceNumber != null) {
-			return invoiceRepository.findByUsernameAndInvoiceNumber(username, invoiceNumber, pageable);
+			return invoiceRepository.findByUsernameContainingAndInvoiceNumber(username, invoiceNumber, pageable);
 		}
 
 		else
@@ -385,7 +385,7 @@ public class InvoiceController {
 			@RequestHeader(value = "pageNumber", defaultValue = "0", required = false) int page,
 			@RequestHeader(value = "pageSize", defaultValue = "10", required = false) int size) {
 		Page<InvoiceDTO> invoices = convertInvoicetoInvoiceDTO(
-				convertListToPage(invoiceRepository.findByUsername(username), page, size));
+				convertListToPage(invoiceRepository.findByUsernameContaining(username), page, size));
 		if (invoices.isEmpty()) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No invoices found");
 		}
@@ -454,7 +454,7 @@ public class InvoiceController {
 		String username = s3service.getUserNameFromToken(token);
 
 		Page<InvoiceDTO> invoices = convertInvoicetoInvoiceDTO(
-				convertListToPage(invoiceRepository.findByUsername(username), page, size));
+				convertListToPage(invoiceRepository.findByUsernameContaining(username), page, size));
 		if (invoices.isEmpty()) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No invoices found");
 		}

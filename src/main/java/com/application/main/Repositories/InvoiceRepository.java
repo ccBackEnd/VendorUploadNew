@@ -21,8 +21,8 @@ public interface InvoiceRepository extends MongoRepository<Invoice, String> {
 	Boolean existsByInvoiceNumber(String invoicenumber);
 //	Invoice findBypoNumber(String poNumber);
 	Page<InvoiceDTO> findByPoNumber(String poNumber,Pageable pageable);
-	List<Invoice> findByUsername(String username);
-	List<Invoice> findByUsernameAndStatus(String username,String status);
+	List<Invoice> findByUsernameContaining(String username);
+	List<Invoice> findByUsernameContainingAndStatus(String username,String status);
 	List<Invoice> findByInvoiceDateBetween(LocalDate invoiceDate1,LocalDate invDate2);
 	Optional<Invoice> findByIdAndInvoiceNumber(String id, String invoiceNumber);
 
@@ -31,9 +31,9 @@ public interface InvoiceRepository extends MongoRepository<Invoice, String> {
 	
 	Page<InvoiceDTO> findByInvoiceNumber(String invoiceNumber,Pageable pageable);
 
-	Page<InvoiceDTO> findByUsernameAndPoNumber(String username, String poNumber,Pageable pageable);
+	Page<InvoiceDTO> findByUsernameContainingAndPoNumber(String username, String poNumber,Pageable pageable);
 
-	Page<InvoiceDTO> findByUsernameAndInvoiceNumber(String username, String invoiceNumber,Pageable pageable);
+	Page<InvoiceDTO> findByUsernameContainingAndInvoiceNumber(String username, String invoiceNumber,Pageable pageable);
 	
 	Page<InvoiceDTO> findByPoNumberAndInvoiceNumber(String poNumber, String invoiceNumber,Pageable pageable);
 
@@ -46,11 +46,11 @@ public interface InvoiceRepository extends MongoRepository<Invoice, String> {
 
 	Page<InvoiceDTO> findByPoNumberContaining(String poNumber, Pageable pageable);
 
-	long countByUsername(String username);
+	long countByUsernameContaining(String username);
 
 	Page<InvoiceDTO> findByUsernameAndStatusIgnoreCase(String username, String string, Pageable pageable);
 
-	long countByUsernameAndStatus(String username, String string);
+	long countByUsernameContainingAndStatus(String username, String string);
 	// In your InvoiceRepository interface
 
 
