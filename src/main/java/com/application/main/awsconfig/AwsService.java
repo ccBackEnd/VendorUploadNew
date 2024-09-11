@@ -176,7 +176,7 @@ public class AwsService {
 		Set<String> remarksset = new HashSet<String>();
 		remarksset.add(remarks);
 		invoice.setRemarks(remarksset);
-		invoice.setUsername(username);
+		invoice.setUsername(List.of(username));
 		invoice.setInvoiceAmount(invoiceAmount);
 		System.out.println("-------------------- before invoice date--------------");
 		if (invoiceDate != null) {
@@ -218,7 +218,7 @@ public class AwsService {
 		remarksSet.addAll(remarksset);
 		responseData.put("Remarks", remarksSet);
 		responseData.put("InvoiceAmount", invoiceAmount);
-		responseData.put("Username", username);
+		responseData.put("created_for_Username", username);
 		responseData.put("deliveryPlant", deliveryPlant);
 		responseData.put("InvoiceNumber", invoiceNumber);
 		return responseData;

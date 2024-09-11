@@ -182,7 +182,7 @@ public class InvoiceController {
 		if (uploadMongoFile == null)
 			return ResponseEntity.ok(HttpStatus.METHOD_FAILURE);
 		return ResponseEntity.ok(uploadMongoFile).ok(HttpStatus.OK)
-				.ok("Invoice Successfully Uploaded with referenced PO having PO Number : " + poNumber);
+				.ok("Invoice with " + invoiceNumber + " Successfully Uploaded with referenced PO having PO Number : " + poNumber);
 	}
 
 	@GetMapping("searchInvoices")

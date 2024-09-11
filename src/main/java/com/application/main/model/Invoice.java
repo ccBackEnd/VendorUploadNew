@@ -62,7 +62,7 @@ public class Invoice {
 	private String email;
 	private String alternateMobileNumber;
 	private String alternateEmail;
-	private String username;
+	private List<String> username;
 	private Set<String> remarks;
 	private String ses;
 	private String invoiceurl;

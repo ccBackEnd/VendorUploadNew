@@ -13,8 +13,6 @@ import lombok.NoArgsConstructor;
 @Builder
 public class InvoicesHistory {
 	
-	@Id
-	private String id;
 	private String fileurl;
 	private String status;
 	private String invoiceNo;

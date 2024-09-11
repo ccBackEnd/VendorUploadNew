@@ -101,9 +101,8 @@ public class InboxController {
 			if(user.get().isEic()== true) { 
 				ihc.setSent(false);
 				ihc.setRevert(true);
-				status = "reverted";
-				historyinvoice.setStatus(status);
-				invoice.setStatus(status);
+				status = "Reverted";
+				
 				invoice.setRevertCount(invoice.getRevertCount()+1);
 				invoice.setDatetimeofHistory(LocalDateTime.now(), false);
 			}
@@ -111,11 +110,11 @@ public class InboxController {
 			{
 				ihc.setSent(true);
 				ihc.setRevert(false);
-				historyinvoice.setStatus(status);
-				invoice.setStatus(status);
 				invoice.setSentCount(invoice.getSentCount() + 1);
 				invoice.setDatetimeofHistory(LocalDateTime.now(), true);
 			}
+			historyinvoice.setStatus(status);
+			invoice.setStatus(status);
 			ihc.setInvoicehistory(historyinvoice);
 			ihc = invhistoryrepo.save(ihc);
 			invoice.setStatus(status);

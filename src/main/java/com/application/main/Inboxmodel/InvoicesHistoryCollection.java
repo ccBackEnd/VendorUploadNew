@@ -1,17 +1,17 @@
 package com.application.main.Inboxmodel;
 
 import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Builder.Default;
 
 @Builder
 @Data
@@ -31,8 +31,12 @@ public class InvoicesHistoryCollection {
 	private String timeofarrival;
 	private String dateofarrival;
 	private InvoicesHistory invoicehistory;
+	
+	@Transient
 	final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+	@Transient
 	final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+
 	public void setDatetimeofHistory(LocalDateTime isoDate) {
 		try {
 			this.dateofarrival = isoDate.format(dateFormatter);
@@ -40,7 +44,6 @@ public class InvoicesHistoryCollection {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-
 	}
 
 	public InvoicesHistoryCollection(String invoiceid, String invoicenumber, LocalDateTime forwardRevertDate,
