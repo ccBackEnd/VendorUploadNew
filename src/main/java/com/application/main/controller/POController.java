@@ -193,14 +193,14 @@ public class POController {
 					.map(iv -> new InvoiceDTO(iv.getId(), iv.getPoNumber(), iv.getInvoiceNumber(), iv.getInvoiceDate(),
 							iv.getStatus(), iv.getDeliveryPlant(), iv.getMobileNumber(), iv.getEic(), null,
 							iv.getPaymentType(), iv.getInvoiceurl(), iv.getInvoiceAmount(), iv.getLatestRecievingDate(),
-							iv.getLatestforwardDate(), iv.getLatestforwardTime(),iv.getLatestRecievedTime() ))
+							iv.getLatestforwardDate(), iv.getLatestforwardTime(), iv.getLatestRecievedTime()))
 					.collect(Collectors.toList());
 		} catch (Exception e) {
 			e.printStackTrace();
 			return List.of();
 		}
 	}
-	
+
 	@GetMapping("/poSummary/getSummary")
 	public Page<PoDTO> searchPO(@RequestHeader(value = "Filterby", required = false) String poStatus,
 			@RequestHeader(value = "Fromdate") String fromdate, @RequestHeader(value = "Todate") String todate,
@@ -229,6 +229,7 @@ public class POController {
 			}
 
 			purchaseorders = mongoTemplate.find(Query.query(criteria), PoSummary.class);
+			purchaseorders.forEach(System.out::println);
 			System.out.println("000-------------------------------------------000");
 			List<PoSummary> purchaseordersbydate = porepo.findByPoIssueDateBetween(LocalDate.parse(fromdate, formatter),
 					LocalDate.parse(todate, formatter));
@@ -237,7 +238,8 @@ public class POController {
 			System.out.println("-$$$$$$$$$$$$$$$$$$$---------Printing Filtered List-----------$$$$$$$$$$$$$$----");
 			System.out.println();
 			System.out.println();
-			if(purchaseorders == null) return null;
+			if (purchaseorders == null)
+				return null;
 			System.out.println("---------------------------------------");
 			purchaseorders.forEach(System.out::println);
 			purchaseorderpage = convertListToPage(purchaseorders, page, size);
