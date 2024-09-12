@@ -8,6 +8,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import com.application.main.credentialmodel.UserDTO;
 
 
+
 public interface LoginUserRepository extends MongoRepository<UserDTO, String>{
 	
 	boolean existsByUsernameAndFirstNameAndLastName(String username,String firstName, String lastName);
@@ -20,5 +21,5 @@ public interface LoginUserRepository extends MongoRepository<UserDTO, String>{
 		//boolean existsByUsername(User username);
 
 		boolean existsByUsername(String username);
-
+		List<UserDTO> findByEic(boolean eic);
 }

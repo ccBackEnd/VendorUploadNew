@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class InvoicesHistory {
 	
+	private String fileName;
 	private String fileurl;
 	private String status;
 	private String invoiceNo;
@@ -21,9 +22,10 @@ public class InvoicesHistory {
 	private String sentto;
 	
 	
-	public InvoicesHistory(String fileurl, String invoiceNo, String remarks,
+	public InvoicesHistory(String fileName , String fileurl, String invoiceNo, String remarks,
 			String recievedFrom, String sentto) {
 		super();
+		this.fileName = fileName;
 		this.fileurl = fileurl;
 		this.invoiceNo = invoiceNo;
 		this.remarks = remarks;

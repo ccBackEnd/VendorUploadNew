@@ -19,6 +19,7 @@ import javax.crypto.SecretKey;
 import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -28,6 +29,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectResult;
 import com.application.main.Repositories.DocDetailsRepository;
 import com.application.main.Repositories.InvoiceRepository;
+import com.application.main.Repositories.LoginUserRepository;
 import com.application.main.Repositories.PoSummaryRepository;
 import com.application.main.credentialmodel.CipherEncDec;
 import com.application.main.credentialmodel.DocDetails;
@@ -48,12 +50,17 @@ public class AwsService {
 	DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 	@Autowired
 	InvoiceRepository invoicerepository;
+	
+	@Autowired
+	LoginUserRepository loginrepo;
 
 	@Autowired
 	PoSummaryRepository porepo;
 
 	@Autowired
 	DocDetailsRepository docDetailsRepository;
+	
+	KafkaTemplate<String, Invoice> ktemplate;
 
 	public static final String ALGORITHM = "AES";
 	public static final int KEY_SIZE = 256;
@@ -187,7 +194,9 @@ public class AwsService {
 		invoice.setInvoiceNumber(invoiceNumber);
 		invoice.setCurrentDateTime(LocalDateTime.now());
 		System.err.println("-------------Invoice with : " + invoiceNumber + " Saved Successfully-------------------");
-
+		List<String> usernamelist = invoice.getUsername();
+		usernamelist.add(loginrepo.findByUserCode(invoice.getEic()).get().getUsername());
+		
 		Optional<PoSummary> po = porepo.findByPoNumber(poNumber);
 
 		if (po.isPresent()) {
@@ -221,6 +230,8 @@ public class AwsService {
 		responseData.put("created_for_Username", username);
 		responseData.put("deliveryPlant", deliveryPlant);
 		responseData.put("InvoiceNumber", invoiceNumber);
+		ktemplate.send("Invoiceinbox",invoice);
+		
 		return responseData;
 	}
 }

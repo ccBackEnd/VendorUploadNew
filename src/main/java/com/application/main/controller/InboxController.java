@@ -89,11 +89,14 @@ public class InboxController {
 			s3service.createBucket(token, username + "history");
 			
 			String url = invoice.getInvoiceurl();
+			String fileName = invoice.getInvoiceNumber() ;
 			if (fileinvoice != null) {
+				fileName = fileinvoice.getOriginalFilename();
 				url = s3service.uploadFile(token, fileinvoice, invoice.getInvoiceNumber(), username).getUrl();
 			}
 			Optional<UserDTO> user = loginrepository.findByUsername(username);
-			InvoicesHistory historyinvoice = new InvoicesHistory(url, invoice.getInvoiceNumber(), remarks, username, "sent to Y");
+			
+			InvoicesHistory historyinvoice = new InvoicesHistory(fileName , url, invoice.getInvoiceNumber(), remarks, username, "sent to Y");
 			InvoicesHistoryCollection ihc = new InvoicesHistoryCollection(id, invoice.getInvoiceNumber(),LocalDateTime.now(),
 					null);
 			ihc.setDatetimeofHistory(LocalDateTime.now());

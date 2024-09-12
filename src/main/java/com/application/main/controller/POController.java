@@ -42,8 +42,8 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.application.main.PaymentRepositories.PaymentDetailsRepository;
 import com.application.main.Repositories.DocDetailsRepository;
 import com.application.main.Repositories.InvoiceRepository;
-import com.application.main.Repositories.PoSummaryRepository;
 import com.application.main.Repositories.LoginUserRepository;
+import com.application.main.Repositories.PoSummaryRepository;
 import com.application.main.awsconfig.AWSClientConfigService;
 import com.application.main.awsconfig.AwsService;
 import com.application.main.credentialmodel.CipherEncDec;
@@ -56,6 +56,7 @@ import com.application.main.model.PoSummary;
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
+//	@EnableSpringDataWebSupport(pageSerializationMode = PageSerializationMode.VIA_DTO)
 @RequestMapping("/call/vendor/Vendorportal")
 public class POController {
 
@@ -199,7 +200,7 @@ public class POController {
 			return List.of();
 		}
 	}
-
+	
 	@GetMapping("/poSummary/getSummary")
 	public Page<PoDTO> searchPO(@RequestHeader(value = "Filterby", required = false) String poStatus,
 			@RequestHeader(value = "Fromdate") String fromdate, @RequestHeader(value = "Todate") String todate,
@@ -228,6 +229,7 @@ public class POController {
 			}
 
 			purchaseorders = mongoTemplate.find(Query.query(criteria), PoSummary.class);
+			System.out.println("000-------------------------------------------000");
 			List<PoSummary> purchaseordersbydate = porepo.findByPoIssueDateBetween(LocalDate.parse(fromdate, formatter),
 					LocalDate.parse(todate, formatter));
 			purchaseorders = purchaseorders.stream().filter(obj1 -> purchaseordersbydate.stream()
@@ -235,6 +237,8 @@ public class POController {
 			System.out.println("-$$$$$$$$$$$$$$$$$$$---------Printing Filtered List-----------$$$$$$$$$$$$$$----");
 			System.out.println();
 			System.out.println();
+			if(purchaseorders == null) return null;
+			System.out.println("---------------------------------------");
 			purchaseorders.forEach(System.out::println);
 			purchaseorderpage = convertListToPage(purchaseorders, page, size);
 			System.out.println("---------Converting PO to PODTO---------");
@@ -249,7 +253,7 @@ public class POController {
 
 	private Page<PoDTO> convertPoAsPODTO(Page<PoSummary> purchaseorderpage) {
 		System.out.println("---------   CONVERTING PAGE PO TO PAGE PO DTO   -----------------------------");
-		if (purchaseorderpage.isEmpty() || purchaseorderpage == null) {
+		if (purchaseorderpage == null || purchaseorderpage.isEmpty()) {
 			System.out.println("------------NULL CASE -----");
 			return null;
 		}
@@ -266,7 +270,7 @@ public class POController {
 
 	private Page<PoSummary> convertListToPage(List<PoSummary> purchaseorders, int page, int size) {
 		System.out.println("------------------    CONVERTING LIST TO PAGE    ---------------");
-		if (purchaseorders.isEmpty() || purchaseorders == null)
+		if (purchaseorders == null || purchaseorders.isEmpty())
 			return null;
 		Pageable pageable = PageRequest.of(page, size, Sort.by("poIssueDate").descending());
 		int start = Math.min((int) pageable.getOffset(), purchaseorders.size());

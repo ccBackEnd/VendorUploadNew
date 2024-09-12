@@ -39,6 +39,7 @@ import com.application.main.Repositories.LoginUserRepository;
 import com.application.main.Repositories.PoSummaryRepository;
 import com.application.main.awsconfig.AwsService;
 import com.application.main.credentialmodel.DocDetails;
+import com.application.main.credentialmodel.UserDTO;
 import com.application.main.model.Invoice;
 import com.application.main.model.InvoiceDTO;
 import com.application.main.model.PoSummary;
@@ -65,7 +66,7 @@ public class InvoiceController {
 	DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
 	@Autowired
-	LoginUserRepository vendoruserrepo;
+	LoginUserRepository loginuserrepository;
 
 	@Autowired
 	InvoiceRepository invoiceRepository;
@@ -128,7 +129,8 @@ public class InvoiceController {
 	}
 
 	@PostMapping("/uploadInvoice")
-	public ResponseEntity<?> createInvoice(@RequestParam(value = "poNumber") String poNumber,
+	public ResponseEntity<?> createInvoice(
+			@RequestParam(value = "poNumber") String poNumber,
 			@RequestParam(value = "paymentType", required = false) String paymentType,
 			@RequestParam(value = "deliveryPlant") String deliveryPlant,
 			@RequestParam(value = "invoiceDate") String invoiceDate,
@@ -184,7 +186,12 @@ public class InvoiceController {
 		return ResponseEntity.ok(uploadMongoFile).ok(HttpStatus.OK)
 				.ok("Invoice with " + invoiceNumber + " Successfully Uploaded with referenced PO having PO Number : " + poNumber);
 	}
-
+	
+	@GetMapping("/getEicUsers")
+	public List<UserDTO> getEicUsernames(){
+		return loginuserrepository.findByEic(true);
+	}
+	
 	@GetMapping("searchInvoices")
 	public ResponseEntity<?> searchInvoices(@RequestHeader(value = "Filterby") String invoiceStatus,
 			@RequestHeader(value = "Fromdate") String fromdate, @RequestHeader(value = "Todate") String todate,
@@ -509,29 +516,6 @@ public class InvoiceController {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invoice not found.");
 		}
 	}
-
-//	@GetMapping("/getInboxData")
-//	public ResponseEntity<Page<InvoiceDTO>> getAllInvoices(@RequestHeader("roleName") String roleName,
-//			@RequestHeader(value = "pageNumber",defaultValue = "0",required = false) int page,
-//			@RequestHeader(value = "pag
-//	eSize",defaultValue = "10",required = false) int size) {
-//		Pageable pageable = PageRequest.of(page, size);
-//		Page<InvoiceDTO> invoicedtopage;
-//
-//		if ("admin".equals(roleName) || "admin2".equals(roleName)) {
-//			return ResponseEntity
-//					.ok(invoiceRepository.findByRoleNameAndTypeAndClaimed(roleName, "material", false, pageable));
-//		} else {
-//			// For other roles, filter by roleName only
-//			invoicedtopage = invoiceRepository.findByRoleName(roleName, pageable);
-//		}
-//
-//		if (!invoicedtopage.isEmpty()) {
-//			return ResponseEntity.status(HttpStatus.OK).body(invoicedtopage);
-//		} else {
-//			return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
-//		}
-//	}
 
 //
 //	@GetMapping("/getClaimedInbox")
