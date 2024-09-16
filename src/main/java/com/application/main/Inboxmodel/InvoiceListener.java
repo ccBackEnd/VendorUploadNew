@@ -1,4 +1,4 @@
-package com.application.main.NotificationService;
+package com.application.main.Inboxmodel;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
-import com.application.main.Inboxmodel.InvoicesHistoryCollection;
 import com.application.main.InboxmodelRepository.InvoiceHistoryRepository;
 import com.application.main.model.Invoice;
 

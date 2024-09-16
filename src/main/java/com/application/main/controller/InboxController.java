@@ -29,6 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.application.main.Inboxmodel.InvoicesHistory;
 import com.application.main.Inboxmodel.InvoicesHistoryCollection;
 import com.application.main.InboxmodelRepository.InvoiceHistoryRepository;
+import com.application.main.NotificationService.VendorPortalNotification;
 import com.application.main.Repositories.InvoiceRepository;
 import com.application.main.Repositories.LoginUserRepository;
 import com.application.main.awsconfig.AwsService;
@@ -45,7 +46,7 @@ public class InboxController {
 
 	@Autowired
 	InvoiceRepository invoiceRepository;
-	
+
 	@Autowired
 	LoginUserRepository loginrepository;
 
@@ -55,10 +56,11 @@ public class InboxController {
 	@Autowired
 	InvoiceHistoryRepository invhistoryrepo;
 
-
 	@Autowired
 	private KafkaTemplate<String, Invoice> kafkaInvoice;
+	KafkaTemplate<String, VendorPortalNotification> notificationtemplate;
 
+	@SuppressWarnings("unused")
 	private final MongoTemplate mongoTemplate;
 	DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
@@ -67,17 +69,18 @@ public class InboxController {
 	}
 
 	@PostMapping("/forwardinvoice")
-	public ResponseEntity<?> forwardInvoice(@RequestHeader("id") String id, 
-			@RequestParam(value = "remarks")String remarks,
+	public ResponseEntity<?> forwardInvoice(@RequestHeader("id") String id,
+			@RequestParam(value = "remarks") String remarks,
 			@RequestParam(value = "fileinvoice", required = false) MultipartFile fileinvoice,
 			HttpServletRequest request) throws IOException, Exception {
-		
+
 		System.out.println("------------------------------");
 		System.out.println(remarks);
 		System.out.println("------------------------------");
 		String status = "Sent";
 		// Retrieve the invoice from the database using the invoiceId
 		Optional<Invoice> invoiceOptional = invoiceRepository.findById(id);
+
 		if (invoiceOptional.isEmpty() || !invoiceOptional.isPresent()) {
 			return ResponseEntity.notFound().build();
 		}
@@ -87,42 +90,48 @@ public class InboxController {
 			String token = request.getHeader("Authorization").replace("Bearer ", "");
 			String username = s3service.getUserNameFromToken(token);
 			s3service.createBucket(token, username + "history");
-			
 			String url = invoice.getInvoiceurl();
-			String fileName = invoice.getInvoiceNumber() ;
+			String fileName = invoice.getInvoiceNumber();
 			if (fileinvoice != null) {
 				fileName = fileinvoice.getOriginalFilename();
 				url = s3service.uploadFile(token, fileinvoice, invoice.getInvoiceNumber(), username).getUrl();
 			}
 			Optional<UserDTO> user = loginrepository.findByUsername(username);
-			
-			InvoicesHistory historyinvoice = new InvoicesHistory(fileName , url, invoice.getInvoiceNumber(), remarks, username, "sent to Y");
-			InvoicesHistoryCollection ihc = new InvoicesHistoryCollection(id, invoice.getInvoiceNumber(),LocalDateTime.now(),
-					null);
+
+			InvoicesHistory historyinvoice = new InvoicesHistory(fileName, url, invoice.getInvoiceNumber(), remarks);
+			InvoicesHistoryCollection ihc = new InvoicesHistoryCollection(id, invoice.getInvoiceNumber(),
+					LocalDateTime.now(), null);
 			ihc.setDatetimeofHistory(LocalDateTime.now());
-			
-			if(user.get().isEic()== true) { 
+			String notificationmessage = "Invoice status referenced with " + invoice.getInvoiceNumber()
+					+ " has beem changed !";
+			VendorPortalNotification vendornotification = new VendorPortalNotification(null, invoice.getEic(),
+					LocalDateTime.now(), invoice.getInvoiceNumber(), fileName, username, notificationmessage, "unread",
+					null);
+			if (user.get().isEic() == true) {
 				ihc.setSent(false);
 				ihc.setRevert(true);
+
 				status = "Reverted";
-				
-				invoice.setRevertCount(invoice.getRevertCount()+1);
+				invoice.setRevertCount(invoice.getRevertCount() + 1);
 				invoice.setDatetimeofHistory(LocalDateTime.now(), false);
-			}
-			else
-			{
+			} else {
 				ihc.setSent(true);
 				ihc.setRevert(false);
 				invoice.setSentCount(invoice.getSentCount() + 1);
 				invoice.setDatetimeofHistory(LocalDateTime.now(), true);
 			}
+			invoice.setReciever(invoice.getSender());
+			ihc.setSentto(ihc.getRecievedfrom());
+			ihc.setRecievedfrom(username);
+			invoice.setSender(username);
 			historyinvoice.setStatus(status);
 			invoice.setStatus(status);
 			ihc.setInvoicehistory(historyinvoice);
 			ihc = invhistoryrepo.save(ihc);
+			notificationtemplate.send("vendorportalnotification", vendornotification);
 			invoice.setStatus(status);
 			ArrayList<String> sentrevertlist = invoice.getSentrevertidlist();
-			if (sentrevertlist == null || sentrevertlist.size() == 0 )
+			if (sentrevertlist == null || sentrevertlist.size() == 0)
 				sentrevertlist = new ArrayList<>();
 			sentrevertlist.add(ihc.getId());
 			invoice.setSentrevertidlist(sentrevertlist);
@@ -137,7 +146,8 @@ public class InboxController {
 			}
 
 			invoice.setSentCount(invoice.getSentCount() + 1);
-			Invoice updatedInvoice = invoiceRepository.save(invoice);
+//			Invoice updatedInvoice =
+					invoiceRepository.save(invoice);
 			return ResponseEntity.ok("Sucessfully Forwarded ");
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -145,11 +155,12 @@ public class InboxController {
 		}
 	}
 
-
 	@GetMapping("/Inbox/History")
-	public ResponseEntity<?> getHistory(@RequestParam(value = "invoiceNumber") String invoiceNumber, @RequestHeader("id") String id) {
+	public ResponseEntity<?> getHistory(@RequestParam(value = "invoiceNumber") String invoiceNumber,
+			@RequestHeader("id") String id) {
 
-		List<InvoicesHistoryCollection> invoicesretrieved = invhistoryrepo.findByInvoicenumberOrderByForwardRevertDateDesc(invoiceNumber);
+		List<InvoicesHistoryCollection> invoicesretrieved = invhistoryrepo
+				.findByInvoicenumberOrderByForwardRevertDateDesc(invoiceNumber);
 //		List<InvoicesHistory> invhistorylist1 = sentInvoices.stream().map(InvoicesHistoryCollection::getInvoicehistory) // Extract
 //				.collect(Collectors.toList());
 		Map<String, Object> response = new HashMap<>();
@@ -167,7 +178,8 @@ public class InboxController {
 		Pageable pageable = PageRequest.of(page, size);
 
 		// Retrieve invoices with status "reverted"
-		Page<InvoiceDTO> invoicepage = invoiceRepository.findByUsernameAndStatusIgnoreCase(username, "Reverted", pageable);
+		Page<InvoiceDTO> invoicepage = invoiceRepository.findByUsernameAndStatusIgnoreCase(username, "Reverted",
+				pageable);
 		if (!invoicepage.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.OK).body(invoicepage);
 		} else {

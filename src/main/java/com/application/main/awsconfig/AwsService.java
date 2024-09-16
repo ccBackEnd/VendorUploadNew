@@ -27,6 +27,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectResult;
+import com.application.main.NotificationService.VendorPortalNotification;
 import com.application.main.Repositories.DocDetailsRepository;
 import com.application.main.Repositories.InvoiceRepository;
 import com.application.main.Repositories.LoginUserRepository;
@@ -61,6 +62,7 @@ public class AwsService {
 	DocDetailsRepository docDetailsRepository;
 	
 	KafkaTemplate<String, Invoice> ktemplate;
+	KafkaTemplate<String, VendorPortalNotification> notificationtemplate;
 
 	public static final String ALGORITHM = "AES";
 	public static final int KEY_SIZE = 256;
@@ -168,6 +170,8 @@ public class AwsService {
 		invoice.setInvoiceurl(invoicedetails.getUrl());
 		invoice.setEic(porepo.findByPoNumber(poNumber).get().getEic());
 		invoice.setDeliveryPlant(deliveryPlant);
+		invoice.setSender(username);
+		invoice.setReciever(invoice.getEic());
 
 		List<DocDetails> invoiceobjectaslist = new ArrayList<>();
 		if (invoicedetails != null)
@@ -183,7 +187,7 @@ public class AwsService {
 		Set<String> remarksset = new HashSet<String>();
 		remarksset.add(remarks);
 		invoice.setRemarks(remarksset);
-		invoice.setUsername(List.of(username));
+		invoice.setUsername(List.of(username,invoice.getEic()));
 		invoice.setInvoiceAmount(invoiceAmount);
 		System.out.println("-------------------- before invoice date--------------");
 		if (invoiceDate != null) {
@@ -220,7 +224,9 @@ public class AwsService {
 		porepo.save(po.get());
 		System.out.println("Saving Invoice to database");
 		System.out.println("Invoice with details :-> \n" + invoice.toString() + " is saved succesfully");
-
+		String notificationmessage = "Invoice with " + invoiceNumber + " & with amount = " + invoiceAmount + " is generated";
+		VendorPortalNotification vendornotification = new VendorPortalNotification(null, invoice.getEic(),LocalDateTime.now(), invoiceNumber, invoicedetails.getName(), username,notificationmessage , "unread", null);
+		notificationtemplate.send("vendorportalnotification",vendornotification);
 		Map<String, Object> responseData = new HashMap<>();
 		System.err.println("---------------------------------");
 		Set<String> remarksSet = new HashSet<>();

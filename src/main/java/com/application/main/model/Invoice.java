@@ -80,7 +80,8 @@ public class Invoice {
 	private String sellerGst;
 	private String buyerGst;
 	private String bankaccountno;
-	
+	private String sender;
+	private String reciever;
 	@Default
 	private int sentCount = 0;
 	@Default

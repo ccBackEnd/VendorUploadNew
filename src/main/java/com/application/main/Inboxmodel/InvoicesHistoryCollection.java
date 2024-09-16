@@ -23,6 +23,8 @@ public class InvoicesHistoryCollection {
 	private String id;
 	private String invoiceid;
 	private String invoicenumber;
+	private String sentto;
+	private String recievedfrom;
 	@Default
 	private boolean isSent = true;
 	@Default

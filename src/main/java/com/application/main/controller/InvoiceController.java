@@ -129,8 +129,7 @@ public class InvoiceController {
 	}
 
 	@PostMapping("/uploadInvoice")
-	public ResponseEntity<?> createInvoice(
-			@RequestParam(value = "poNumber") String poNumber,
+	public ResponseEntity<?> createInvoice(@RequestParam(value = "poNumber") String poNumber,
 			@RequestParam(value = "paymentType", required = false) String paymentType,
 			@RequestParam(value = "deliveryPlant") String deliveryPlant,
 			@RequestParam(value = "invoiceDate") String invoiceDate,
@@ -184,14 +183,14 @@ public class InvoiceController {
 		if (uploadMongoFile == null)
 			return ResponseEntity.ok(HttpStatus.METHOD_FAILURE);
 		return ResponseEntity.ok(uploadMongoFile).ok(HttpStatus.OK)
-				.ok("Invoice with " + invoiceNumber + " Successfully Uploaded with referenced PO having PO Number : " + poNumber);
+				.ok(invoiceNumber + " is Successfully Uploaded referenced to PO Number : " + poNumber);
 	}
-	
+
 	@GetMapping("/getEicUsers")
-	public List<UserDTO> getEicUsernames(){
+	public List<UserDTO> getEicUsernames() {
 		return loginuserrepository.findByEic(true);
 	}
-	
+
 	@GetMapping("searchInvoices")
 	public ResponseEntity<?> searchInvoices(@RequestHeader(value = "Filterby") String invoiceStatus,
 			@RequestHeader(value = "Fromdate") String fromdate, @RequestHeader(value = "Todate") String todate,
@@ -223,10 +222,14 @@ public class InvoiceController {
 					LocalDate.parse(todate, formatter));
 			invoices = invoices.stream().filter(obj1 -> invoices1.stream()
 					.anyMatch(obj2 -> obj2.getInvoiceNumber().equals(obj1.getInvoiceNumber()))).toList();
+			if (invoices.isEmpty())
+				return ResponseEntity.ok(null).ok("No Data found !");
 			invoicepage = convertListToPage(invoices, page, size);
+			if (invoicepage == null)
+				return ResponseEntity.ok(null).ok("No Data found !");
 			invoicedtopage = convertInvoicetoInvoiceDTO(invoicepage);
 			invoicedtopage.forEach(System.out::println);
-			return ResponseEntity.ok(invoicedtopage);
+			return ResponseEntity.ok(invoicedtopage).ok(invoicedtopage.getTotalElements() + " no. of Invoices found");
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw e;
@@ -240,14 +243,6 @@ public class InvoiceController {
 		Pageable pageable = PageRequest.of(page, size);
 		Page<InvoiceDTO> poList = invoiceRepository.findByPoNumberContaining(poNumber, pageable);
 		return ResponseEntity.ok(poList);
-	}
-
-	@GetMapping("/revertedInvoiceDetails")
-	public ResponseEntity<?> revertedInvoiceHistory(@RequestParam("id") String id,
-			@RequestParam("invoiceNumber") String invoiceNumber) throws Exception {
-		invoiceRepository.findByIdAndInvoiceNumber(id, invoiceNumber);
-		return null;
-
 	}
 
 //	@PostMapping("/forwarding")
@@ -386,70 +381,61 @@ public class InvoiceController {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "NO DATA FOUND");
 	}
 
-	@GetMapping("getDash")
-	public ResponseEntity<Map<String, Object>> getInvoicesByUsername11(
-			@RequestParam(value = "username") String username,
+	@GetMapping("/getDash")
+	public ResponseEntity<Map<String, ?>> getInvoicesByUsername11(
+			@RequestHeader(value = "Username", required = true) String username,
 			@RequestHeader(value = "pageNumber", defaultValue = "0", required = false) int page,
 			@RequestHeader(value = "pageSize", defaultValue = "10", required = false) int size) {
 		Page<InvoiceDTO> invoices = convertInvoicetoInvoiceDTO(
 				convertListToPage(invoiceRepository.findByUsernameContaining(username), page, size));
-		if (invoices.isEmpty()) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No invoices found");
+		if (invoices == null || invoices.isEmpty()) {
+			return ResponseEntity.ok(Map.of("Error", "No Data Found"));
 		}
 
+		long totalCount = invoices.getTotalElements(); // Use the size of the filtered list
 		long approvedCount = invoices.stream().filter(invoice -> "approved".equalsIgnoreCase(invoice.getStatus()))
-				.count();
-		long inProgressCount = invoices.stream().filter(invoice -> "inProgress".equalsIgnoreCase(invoice.getStatus()))
 				.count();
 		long pendingCount = invoices.stream().filter(invoice -> "pending".equalsIgnoreCase(invoice.getStatus()))
 				.count();
+		long inProgressCount = invoices.stream().filter(invoice -> "reverted".equalsIgnoreCase(invoice.getStatus()))
+				.count() + pendingCount;
 		long rejectedCount = invoices.stream().filter(invoice -> "rejected".equalsIgnoreCase(invoice.getStatus()))
 				.count();
-
-		Map<String, Object> response = new HashMap<>();
-
-		long totalCount = invoices.getTotalElements(); // Use the size of the filtered list
-		response.put("totalCount", totalCount);
-
+if(inProgressCount>totalCount) inProgressCount = totalCount;
 		Map<String, Long> statusCounts = new HashMap<>();
-		statusCounts.put("approved", approvedCount);
-		statusCounts.put("pending", pendingCount);
-		statusCounts.put("rejected", rejectedCount);
-		statusCounts.put("inProgress", inProgressCount);
-		response.put("statusCounts", statusCounts);
 
-		return ResponseEntity.status(HttpStatus.OK).body(response);
+		statusCounts.put("TotalInvoices", totalCount);
+		statusCounts.put("Approved", approvedCount);
+		statusCounts.put("Pending", pendingCount);
+		statusCounts.put("Rejected", rejectedCount);
+		statusCounts.put("inProgress", inProgressCount);
+
+		return ResponseEntity.status(HttpStatus.OK).body(statusCounts);
 	}
 
 	@GetMapping("totalDash")
-	public ResponseEntity<Map<String, Object>> getInvoiceStatistics() {
+	public ResponseEntity<Map<String, ?>> getInvoiceStatistics() {
 		List<Invoice> invoices = invoiceRepository.findAll(); // Fetch all invoices
-
 		if (invoices.isEmpty()) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No invoices found");
+			ResponseEntity.ok(Map.of("Error", "No Data found"));
 		}
 
+		long totalCount = invoices.size(); // Use the size of the list
 		long approvedCount = invoices.stream().filter(invoice -> "approved".equalsIgnoreCase(invoice.getStatus()))
 				.count();
-
 		long pendingCount = invoices.stream().filter(invoice -> "pending".equalsIgnoreCase(invoice.getStatus()))
 				.count();
-
 		long rejectedCount = invoices.stream().filter(invoice -> "rejected".equalsIgnoreCase(invoice.getStatus()))
 				.count();
 
-		Map<String, Object> response = new HashMap<>();
-
-		long totalCount = invoices.size(); // Use the size of the list
-		response.put("totalCount", totalCount);
-
 		Map<String, Long> statusCounts = new HashMap<>();
+		statusCounts.put("totalCount", totalCount);
+		statusCounts.put("completed", totalCount-pendingCount);
 		statusCounts.put("approved", approvedCount);
 		statusCounts.put("pending", pendingCount);
 		statusCounts.put("rejected", rejectedCount);
-		response.put("statusCounts", statusCounts);
 
-		return ResponseEntity.status(HttpStatus.OK).body(response);
+		return ResponseEntity.status(HttpStatus.OK).body(statusCounts);
 	}
 
 	@GetMapping("getDashboard")
@@ -459,7 +445,6 @@ public class InvoiceController {
 			HttpServletRequest request) {
 		String token = request.getHeader("Authorization").replace("Bearer ", "");
 		String username = s3service.getUserNameFromToken(token);
-
 		Page<InvoiceDTO> invoices = convertInvoicetoInvoiceDTO(
 				convertListToPage(invoiceRepository.findByUsernameContaining(username), page, size));
 		if (invoices.isEmpty()) {
@@ -554,7 +539,8 @@ public class InvoiceController {
 				invoiceobject.getDeliveryPlant(), invoiceobject.getMobileNumber(), invoiceobject.getEic(),
 				paymentrepo.findByInvoiceNumber(invoiceobject.getInvoiceNumber()), invoiceobject.getPaymentType(),
 				invoiceobject.getInvoiceurl(), invoiceobject.getInvoiceAmount(), invoiceobject.getLatestRecievingDate(),
-				invoiceobject.getLatestforwardDate(),invoiceobject.getLatestforwardTime(),invoiceobject.getLatestRecievedTime()));
+				invoiceobject.getLatestforwardDate(), invoiceobject.getLatestforwardTime(),
+				invoiceobject.getLatestRecievedTime()));
 	}
 
 }
