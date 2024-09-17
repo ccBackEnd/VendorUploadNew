@@ -160,7 +160,7 @@ public class InboxController {
 			@RequestHeader("id") String id) {
 
 		List<InvoicesHistoryCollection> invoicesretrieved = invhistoryrepo
-				.findByInvoicenumberOrderByForwardRevertDateDesc(invoiceNumber);
+				.findByInvoicenumberOrderByForwardRevertDate(invoiceNumber);
 //		List<InvoicesHistory> invhistorylist1 = sentInvoices.stream().map(InvoicesHistoryCollection::getInvoicehistory) // Extract
 //				.collect(Collectors.toList());
 		Map<String, Object> response = new HashMap<>();
@@ -178,7 +178,7 @@ public class InboxController {
 		Pageable pageable = PageRequest.of(page, size);
 
 		// Retrieve invoices with status "reverted"
-		Page<InvoiceDTO> invoicepage = invoiceRepository.findByUsernameAndStatusIgnoreCase(username, "Reverted",
+		Page<InvoiceDTO> invoicepage = invoiceRepository.findByUsernameAndStatusIgnoreCaseOrderByLatestRecievingDateDesc(username, "Reverted",
 				pageable);
 		if (!invoicepage.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.OK).body(invoicepage);

@@ -7,20 +7,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.application.main.Repositories.LoginUserRepository;
 
 import jakarta.servlet.http.HttpServletRequest;
 
 @Service
-@Component
+@RestController
+@RequestMapping("/call/vendor/Vendorportal")
 public class NotificationController {
 	private static Logger log = LoggerFactory.getLogger(NotificationController.class);
 	@Autowired
@@ -34,7 +36,7 @@ public class NotificationController {
 		try {
 			String username = loginrepository.findByUserCode(usercode).orElse(null).getUsername();
 			List<VendorPortalNotification> list = notificationRepository
-					.findAllByRecieverusernameAndGeneratedAtOrderByDesc(username);
+					.findAllByRecieverusernameAndOrderByGeneratedAtDesc(username);
 			return ResponseEntity.ok(list).ok("New Notification");
 		} catch (Exception e) {
 			throw e;
@@ -55,7 +57,7 @@ public class NotificationController {
 		}
 	}
 
-	@PutMapping("changeallnotificationsstatus")
+	@PutMapping("changeAllNotificationsStatus")
 	public ResponseEntity<?> changeStatusAll() {
 		List<VendorPortalNotification> notificiationlist = notificationRepository.findAll();
 		if (notificiationlist.isEmpty())
@@ -67,7 +69,7 @@ public class NotificationController {
 		return ResponseEntity.ok("All " + notificiationlist.size() + " notifications are read");
 	}
 
-	@DeleteMapping("/deletenotification/{id}")
+	@DeleteMapping("/deleteNotification/{id}")
 	public ResponseEntity<?> deletenotification(@PathVariable("id") String id) {
 		try {
 			if (notificationRepository.findById(id).isPresent())
@@ -81,7 +83,7 @@ public class NotificationController {
 		}
 	}
 
-	@PutMapping("deleteallnotifications")
+	@PutMapping("deleteAllNotifications")
 	public ResponseEntity<?> deleteAllNotifications() {
 		notificationRepository.deleteAll();
 		List<VendorPortalNotification> notificiationlist = notificationRepository.findAll();
