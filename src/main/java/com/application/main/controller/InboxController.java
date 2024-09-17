@@ -74,7 +74,7 @@ public class InboxController {
 			@RequestParam(value = "fileinvoice", required = false) MultipartFile fileinvoice,
 			HttpServletRequest request) throws IOException, Exception {
 
-		System.out.println("------------------------------");
+		System.out.println("--- Forwarding Initiation -------");
 		System.out.println(remarks);
 		System.out.println("------------------------------");
 		String status = "Sent";

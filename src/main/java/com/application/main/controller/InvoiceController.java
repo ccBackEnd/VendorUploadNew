@@ -91,7 +91,7 @@ public class InvoiceController {
 	}
 
 	@GetMapping("/getdeliveryplants")
-	public Set<String> deliveryplants(@RequestParam String poNumber) {
+	public Set<String> deliveryplants(@RequestHeader("poNumber") String poNumber) {
 		return porepo.findByPoNumber(poNumber).get().getDeliveryPlant();
 	}
 
@@ -107,9 +107,9 @@ public class InvoiceController {
 //		
 //	}
 
-	@DeleteMapping("/delete")
-	public ResponseEntity<String> deleteInvoice(@RequestParam("id") String id,
-			@RequestParam(value = "poNumber") String poNumber) {
+	@DeleteMapping("/deleteSingleInvoice")
+	public ResponseEntity<String> deleteInvoice(@RequestHeader("id") String id,
+			@RequestHeader("poNumber") String poNumber) {
 		// Assuming you have a method in your repository to delete an invoice by ID
 		try {
 			Optional<Invoice> invoice = invoiceRepository.findById(id);
