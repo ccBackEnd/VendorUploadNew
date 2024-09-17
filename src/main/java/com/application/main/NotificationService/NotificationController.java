@@ -20,6 +20,7 @@ import com.application.main.Repositories.LoginUserRepository;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+
 @Service
 @RestController
 @RequestMapping("/call/vendor/Vendorportal")
@@ -36,7 +37,7 @@ public class NotificationController {
 		try {
 			String username = loginrepository.findByUserCode(usercode).orElse(null).getUsername();
 			List<VendorPortalNotification> list = notificationRepository
-					.findAllByRecieverusernameAndOrderByGeneratedAtDesc(username);
+					.findAllByRecieverusernameOrderByGeneratedAtDesc(username);
 			return ResponseEntity.ok(list).ok("New Notification");
 		} catch (Exception e) {
 			throw e;

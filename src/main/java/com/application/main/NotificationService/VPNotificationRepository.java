@@ -8,6 +8,6 @@ public interface VPNotificationRepository extends MongoRepository<VendorPortalNo
 
 	List<VendorPortalNotification> findAllByRecieverusername(String recieverusername);
 
-	List<VendorPortalNotification> findAllByRecieverusernameAndOrderByGeneratedAtDesc(String recieverusername);
+	List<VendorPortalNotification> findAllByRecieverusernameOrderByGeneratedAtDesc(String recieverusername);
 
 }
