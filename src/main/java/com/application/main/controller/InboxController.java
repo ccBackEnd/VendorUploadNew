@@ -104,8 +104,8 @@ public class InboxController {
 			ihc.setDatetimeofHistory(LocalDateTime.now());
 			String notificationmessage = "Invoice status referenced with " + invoice.getInvoiceNumber()
 					+ " has beem changed !";
-			VendorPortalNotification vendornotification = new VendorPortalNotification(null, invoice.getEic(),
-					LocalDateTime.now(), invoice.getInvoiceNumber(), fileName, username, notificationmessage, "unread",
+			VendorPortalNotification vendornotification = new VendorPortalNotification(null, invoice.getReciever(),
+					LocalDateTime.now(), invoice.getInvoiceNumber(), fileName, invoice.getSender(), notificationmessage, "unread",
 					null);
 			if (user.get().isEic() == true) {
 				ihc.setSent(false);

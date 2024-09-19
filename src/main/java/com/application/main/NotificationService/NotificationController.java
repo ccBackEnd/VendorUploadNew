@@ -32,10 +32,9 @@ public class NotificationController {
 	LoginUserRepository loginrepository;
 
 	@GetMapping("/notifications")
-	public ResponseEntity<?> getallNotifications(@RequestHeader("usercode") String usercode,
+	public ResponseEntity<?> getallNotifications(@RequestHeader("username") String username,
 			HttpServletRequest request) {
 		try {
-			String username = loginrepository.findByUserCode(usercode).orElse(null).getUsername();
 			List<VendorPortalNotification> list = notificationRepository
 					.findAllByRecieverusernameOrderByGeneratedAtDesc(username);
 			return ResponseEntity.ok(list).ok("New Notification");
