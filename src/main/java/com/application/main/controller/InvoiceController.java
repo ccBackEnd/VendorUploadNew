@@ -62,7 +62,7 @@ public class InvoiceController {
 
 	@Autowired
 	DocDetailsRepository docdetailsrepository;
-	
+
 	@Autowired
 	DigitalSignValidationService digitalSignVerificationObject;
 
@@ -161,7 +161,9 @@ public class InvoiceController {
 		String token = request.getHeader("Authorization").replace("Bearer ", "");
 		String username = s3service.getUserNameFromToken(token);
 		System.out.println("---------------Invoice Creation Initiated !!!------------  " + username);
-		digitalSignVerificationObject.verify(invoiceFile);
+		boolean signed = digitalSignVerificationObject.verify(invoiceFile);
+		if (!signed)
+			return ResponseEntity.ok(HttpStatus.METHOD_FAILURE).ok("Please upload digitally signed invoice");
 		s3service.createBucket(token, username);
 		DocDetails InvoiceuploadResponse = s3service.uploadFile(token, invoiceFile, invoiceNumber, username);
 		List<DocDetails> suppDocNameList = new ArrayList<>();
@@ -406,7 +408,8 @@ public class InvoiceController {
 				.count() + pendingCount;
 		long rejectedCount = invoices.stream().filter(invoice -> "rejected".equalsIgnoreCase(invoice.getStatus()))
 				.count();
-if(inProgressCount>totalCount) inProgressCount = totalCount;
+		if (inProgressCount > totalCount)
+			inProgressCount = totalCount;
 		Map<String, Long> statusCounts = new HashMap<>();
 
 		statusCounts.put("TotalInvoices", totalCount);
@@ -435,7 +438,7 @@ if(inProgressCount>totalCount) inProgressCount = totalCount;
 
 		Map<String, Long> statusCounts = new HashMap<>();
 		statusCounts.put("totalCount", totalCount);
-		statusCounts.put("completed", totalCount-pendingCount);
+		statusCounts.put("completed", totalCount - pendingCount);
 		statusCounts.put("approved", approvedCount);
 		statusCounts.put("pending", pendingCount);
 		statusCounts.put("rejected", rejectedCount);
