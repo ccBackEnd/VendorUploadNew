@@ -1,4 +1,4 @@
-package com.application.main.credentialmodel;
+package com.application.main.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

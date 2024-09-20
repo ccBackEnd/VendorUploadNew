@@ -33,9 +33,9 @@ import com.application.main.NotificationService.VendorPortalNotification;
 import com.application.main.Repositories.InvoiceRepository;
 import com.application.main.Repositories.LoginUserRepository;
 import com.application.main.awsconfig.AwsService;
-import com.application.main.credentialmodel.UserDTO;
 import com.application.main.model.Invoice;
 import com.application.main.model.InvoiceDTO;
+import com.application.main.model.UserDTO;
 
 import jakarta.servlet.http.HttpServletRequest;
 

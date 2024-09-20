@@ -47,7 +47,7 @@ import com.application.main.Repositories.PoSummaryRepository;
 import com.application.main.awsconfig.AWSClientConfigService;
 import com.application.main.awsconfig.AwsService;
 import com.application.main.credentialmodel.CipherEncDec;
-import com.application.main.credentialmodel.DocDetails;
+import com.application.main.model.DocDetails;
 import com.application.main.model.Invoice;
 import com.application.main.model.InvoiceDTO;
 import com.application.main.model.PoDTO;

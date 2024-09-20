@@ -1,4 +1,4 @@
-package com.application.main.credentialmodel;
+package com.application.main.model;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;

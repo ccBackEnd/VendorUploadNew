@@ -1,4 +1,4 @@
-package com.application.main.credentialmodel;
+package com.application.main.model;
 
 import org.hibernate.validator.constraints.UniqueElements;
 import org.springframework.data.annotation.Id;

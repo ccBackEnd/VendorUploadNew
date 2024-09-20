@@ -6,7 +6,7 @@ import java.util.Optional;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
 
-import com.application.main.credentialmodel.DocDetails;
+import com.application.main.model.DocDetails;
 
 
 public interface DocDetailsRepository extends MongoRepository<DocDetails, String> {

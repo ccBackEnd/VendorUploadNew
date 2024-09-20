@@ -33,7 +33,7 @@ import com.application.main.Repositories.InvoiceRepository;
 import com.application.main.Repositories.LoginUserRepository;
 import com.application.main.Repositories.PoSummaryRepository;
 import com.application.main.credentialmodel.CipherEncDec;
-import com.application.main.credentialmodel.DocDetails;
+import com.application.main.model.DocDetails;
 import com.application.main.model.Invoice;
 import com.application.main.model.PoSummary;
 import com.fasterxml.jackson.databind.JsonNode;

@@ -38,11 +38,12 @@ import com.application.main.Repositories.InvoiceRepository;
 import com.application.main.Repositories.LoginUserRepository;
 import com.application.main.Repositories.PoSummaryRepository;
 import com.application.main.awsconfig.AwsService;
-import com.application.main.credentialmodel.DocDetails;
-import com.application.main.credentialmodel.UserDTO;
+import com.application.main.credentialmodel.DigitalSignValidationService;
+import com.application.main.model.DocDetails;
 import com.application.main.model.Invoice;
 import com.application.main.model.InvoiceDTO;
 import com.application.main.model.PoSummary;
+import com.application.main.model.UserDTO;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -61,6 +62,9 @@ public class InvoiceController {
 
 	@Autowired
 	DocDetailsRepository docdetailsrepository;
+	
+	@Autowired
+	DigitalSignValidationService digitalSignVerificationObject;
 
 	private final MongoTemplate mongoTemplate;
 	DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -157,6 +161,7 @@ public class InvoiceController {
 		String token = request.getHeader("Authorization").replace("Bearer ", "");
 		String username = s3service.getUserNameFromToken(token);
 		System.out.println("---------------Invoice Creation Initiated !!!------------  " + username);
+		digitalSignVerificationObject.verify(invoiceFile);
 		s3service.createBucket(token, username);
 		DocDetails InvoiceuploadResponse = s3service.uploadFile(token, invoiceFile, invoiceNumber, username);
 		List<DocDetails> suppDocNameList = new ArrayList<>();
