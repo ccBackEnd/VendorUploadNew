@@ -164,6 +164,7 @@ public class InvoiceController {
 		boolean signed = digitalSignVerificationObject.verify(invoiceFile);
 		if (!signed)
 			return ResponseEntity.ok(HttpStatus.METHOD_FAILURE).ok("Please upload digitally signed invoice");
+		else System.out.println("Digitally Signed Invoice");
 		s3service.createBucket(token, username);
 		DocDetails InvoiceuploadResponse = s3service.uploadFile(token, invoiceFile, invoiceNumber, username);
 		List<DocDetails> suppDocNameList = new ArrayList<>();
@@ -182,7 +183,7 @@ public class InvoiceController {
 				}
 			});
 		}
-		String msmecategory = porepo.findByPoNumber(poNumber).get().getMsmecategoy();
+		String msmecategory = porepo.findByPoNumber(poNumber).orElseGet(null).getMsmecategoy();
 		Map<String, Object> uploadMongoFile = s3service.uploadMongoFile(username, msmecategory, poNumber, paymentType,
 				deliveryPlant, invoiceDate, invoiceNumber, invoiceAmount, mobileNumber, email, alternateMobileNumber,
 				alternateEmail, remarks, ses, isagainstLC, isGst, isTredExchangePayment, factoryunitnumber,
