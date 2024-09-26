@@ -199,7 +199,7 @@ public class AwsService {
 		invoice.setCurrentDateTime(LocalDateTime.now());
 		System.err.println("-------------Invoice with : " + invoiceNumber + " Saved Successfully-------------------");
 		List<String> usernamelist = invoice.getUsername();
-		usernamelist.add(loginrepo.findByUserCode(invoice.getEic()).get().getUsername());
+		usernamelist.add(loginrepo.findByUsername(invoice.getEic()).get().getUsername());
 		
 		Optional<PoSummary> po = porepo.findByPoNumber(poNumber);
 
