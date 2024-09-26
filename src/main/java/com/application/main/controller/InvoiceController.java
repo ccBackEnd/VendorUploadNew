@@ -183,7 +183,8 @@ public class InvoiceController {
 				}
 			});
 		}
-		String msmecategory = porepo.findByPoNumber(poNumber).orElseGet(null).getMsmecategoy();
+//		String msmecategory = porepo.findByPoNumber(poNumber).orElseGet(null).getMsmecategoy();
+		String msmecategory = null;
 		Map<String, Object> uploadMongoFile = s3service.uploadMongoFile(username, msmecategory, poNumber, paymentType,
 				deliveryPlant, invoiceDate, invoiceNumber, invoiceAmount, mobileNumber, email, alternateMobileNumber,
 				alternateEmail, remarks, ses, isagainstLC, isGst, isTredExchangePayment, factoryunitnumber,
