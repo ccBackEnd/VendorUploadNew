@@ -36,23 +36,32 @@ public class InvoiceService {
 	Logger logApp = LoggerFactory.getLogger(InvoiceService.class);
 
 	DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-	@Autowired
-	InvoiceRepository invoicerepository;
+	
+	private InvoiceRepository invoicerepository;
+	private LoginUserRepository loginrepo;
+	private PoSummaryRepository porepo;
+	private DocumentDetailsRepository documentDetailsRepository;
+	private NotificationRepository notificationRepository;
 
+	private KafkaTemplate<String, Invoice> invoiceTemplate;
+	private KafkaTemplate<String, VendorPortalNotification> notificationTemplate;
+	private NotificationService notificationService;
+	
+	
 	@Autowired
-	LoginUserRepository loginrepo;
-
-	@Autowired
-	PoSummaryRepository porepo;
-
-	@Autowired
-	DocumentDetailsRepository documentDetailsRepository;
-
-	@Autowired
-	NotificationRepository notificationRepository;
-
-	KafkaTemplate<String, Invoice> ktemplate;
-	KafkaTemplate<String, VendorPortalNotification> notificationtemplate;
+	public InvoiceService(InvoiceRepository invoicerepository, LoginUserRepository loginrepo,
+			PoSummaryRepository porepo, DocumentDetailsRepository documentDetailsRepository,
+			NotificationRepository notificationRepository, KafkaTemplate<String, Invoice> invoiceTemplate,
+			KafkaTemplate<String, VendorPortalNotification> notificationTemplate, NotificationService notificationService) {
+		this.invoicerepository = invoicerepository;
+		this.loginrepo = loginrepo;
+		this.porepo = porepo;
+		this.documentDetailsRepository = documentDetailsRepository;
+		this.notificationRepository = notificationRepository;
+		this.invoiceTemplate = invoiceTemplate;
+		this.notificationTemplate = notificationTemplate;
+		this.notificationService = notificationService;
+	}
 
 	public ResponseEntity<?> createInvoice(String username, String msmecategory, String poNumber, String paymentType,
 			String deliveryPlant, String invoiceDate, String invoiceNumber, String invoiceAmount, String mobileNumber,
@@ -64,12 +73,9 @@ public class InvoiceService {
 		Invoice invoice = new Invoice();
 		invoice.setPoNumber(poNumber);
 
-		StatusHistory statushistory = new StatusHistory(LocalDateTime.now(), "Sent", "Created and Sent Initially");
-		List<StatusHistory> statuslist = new ArrayList<>();
-		statuslist.add(statushistory);
-		invoice.setStatushistory(statuslist);
+		
+		invoice.setStatushistory(setStatusHistory("Sent", "Created and Sent Initially"));
 		invoice.setStatus("Sent");
-
 		invoice.setInvoiceurl(invoicedetails.getUrl());
 		invoice.setEic(porepo.findByPoNumber(poNumber).get().getEic());
 		invoice.setDeliveryPlant(deliveryPlant);
@@ -94,6 +100,7 @@ public class InvoiceService {
 		System.out.println("------- Invoice referenced with this invoice date :-  " + invoiceDate);
 		LocalDate date = LocalDate.parse(invoiceDate, formatter);
 		invoice.setInvoiceDate(date);
+		
 		invoice.setInvoiceNumber(invoiceNumber);
 		invoice.setCurrentDateTime(LocalDateTime.now());
 		System.err.println("-------------Invoice with : " + invoiceNumber + " Saved Successfully-------------------");
@@ -107,26 +114,17 @@ public class InvoiceService {
 		updatepurchaseorder(poNumber, invoice);
 
 		System.out.println("Invoice with details :-> \n" + invoice.toString() + " is saved succesfully");
-		String notificationmessage = "Invoice with " + invoiceNumber + " & with amount = " + invoiceAmount
-				+ " is generated";
-		VendorPortalNotification vendornotification = new VendorPortalNotification(null, invoice.getEic(),
-				LocalDateTime.now(), invoiceNumber, invoicedetails.getName(), username, notificationmessage, "unread",
-				null);
-		System.out.println("Notification Initiated...");
-		vendornotification = notificationRepository.save(vendornotification);
-		logApp.info("Notification Sending...");
-		notificationtemplate.send("vendorportalnotification", vendornotification);
-		logApp.info("Notification Sent Properly...");
+		
+		
 		Map<String, Object> responseData = new HashMap<>();
-		System.err.println("---------------------------------");
 		Set<String> remarksSet = new HashSet<>();
 		remarksSet.addAll(remarksset);
-		responseData.put("Remarks", remarksSet);
+		responseData.put("InvoiceNumber", invoiceNumber);
 		responseData.put("InvoiceAmount", invoiceAmount);
 		responseData.put("created_for_Username", username);
 		responseData.put("deliveryPlant", deliveryPlant);
-		responseData.put("InvoiceNumber", invoiceNumber);
-		ktemplate.send("Invoiceinbox", invoice);
+		invoiceTemplate.send("Invoiceinbox", invoice);
+		notificationService.sendNotification(username , invoice.getEic(),invoiceNumber,invoicedetails,"unread");
 
 		return ResponseEntity.ok(responseData);
 	}
@@ -154,5 +152,12 @@ public class InvoiceService {
 		} catch (Exception e) {
 			throw e;
 		}
+	}
+	
+	private List<StatusHistory> setStatusHistory(String status , String remarks) {
+		StatusHistory statushistory = new StatusHistory(LocalDateTime.now(), status, remarks);
+		List<StatusHistory> statuslist = new ArrayList<>();
+		statuslist.add(statushistory);
+		return statuslist;
 	}
 }
