@@ -7,8 +7,8 @@ import java.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.annotation.Id;
 
-import com.application.main.PaymentRepositories.PaymentDetailsRepository;
-import com.application.main.Paymentmodel.Paymentbreakup;
+import com.application.main.Repositories.PaymentRepository.PaymentDetailsRepository;
+import com.application.main.model.PaymentDetailsModel.Paymentbreakup;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import lombok.AllArgsConstructor;

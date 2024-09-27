@@ -39,15 +39,15 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.amazonaws.services.s3.AmazonS3;
-import com.application.main.PaymentRepositories.PaymentDetailsRepository;
-import com.application.main.Repositories.DocDetailsRepository;
+import com.application.main.Repositories.DocumentDetailsRepository;
 import com.application.main.Repositories.InvoiceRepository;
 import com.application.main.Repositories.LoginUserRepository;
 import com.application.main.Repositories.PoSummaryRepository;
-import com.application.main.awsconfig.AWSClientConfigService;
-import com.application.main.awsconfig.AwsService;
-import com.application.main.credentialmodel.CipherEncDec;
-import com.application.main.model.DocDetails;
+import com.application.main.Repositories.PaymentRepository.PaymentDetailsRepository;
+import com.application.main.Service.EncDecService;
+import com.application.main.Service.FileUploadService;
+import com.application.main.config.awsconfig.AwsConfigService.AWSClientConfigService;
+import com.application.main.model.DocumentDetails;
 import com.application.main.model.Invoice;
 import com.application.main.model.InvoiceDTO;
 import com.application.main.model.PoDTO;
@@ -67,13 +67,13 @@ public class POController {
 	PaymentDetailsRepository paymentrepo;
 
 	@Autowired
-	AwsService s3service;
+	FileUploadService s3service;
 
 	@Autowired
 	private AWSClientConfigService s3client;
 
 	@Autowired
-	DocDetailsRepository docdetailsrepository;
+	DocumentDetailsRepository docdetailsrepository;
 
 	private final MongoTemplate mongoTemplate;
 
@@ -127,8 +127,8 @@ public class POController {
 		try {
 			LocalDate issuedt = LocalDate.parse(poIssueDate, formatter);
 			LocalDate delt = LocalDate.parse(deliveryDate, formatter);
-			DocDetails PoUploadObject = s3service.uploadFile(token, filePO, poNumber, "");
-//			DocDetails doc = new DocDetails(filePO.getOriginalFilename(), poNumber, PoUploadObject.get("generatedURL").toString(),(SecretKey) PoUploadObject.get("secretkey"));
+			DocumentDetails PoUploadObject = s3service.uploadFile(token, filePO, poNumber, "");
+//			DocumentDetails doc = new DocumentDetails(filePO.getOriginalFilename(), poNumber, PoUploadObject.get("generatedURL").toString(),(SecretKey) PoUploadObject.get("secretkey"));
 
 			PoSummary ps = new PoSummary(poStatus, poNumber, description, issuedt, delt, deliveryPlant,
 					deliveryTimelines, 0, eic, poAmount, receiver, username, PoUploadObject.getUrl());
@@ -288,7 +288,7 @@ public class POController {
 		if (url == null)
 			return ResponseEntity.ok("");
 		token = token.replace("Bearer ", "");
-		Optional<DocDetails> existingdoc = docdetailsrepository.findByUrl(url);
+		Optional<DocumentDetails> existingdoc = docdetailsrepository.findByUrl(url);
 		if (!existingdoc.isPresent()) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
 		}
@@ -296,7 +296,7 @@ public class POController {
 		String key = existingdoc.get().getBase64Encodedsecretkey();
 		SecretKey secretkey = convertBase64ToSecretKey(key);
 
-		url = new CipherEncDec().decrypt(url, secretkey);
+		url = new EncDecService().decrypt(url, secretkey);
 		int index = url.indexOf("XCIDHK2788k99BBSEEL99");
 
 		String bucketname = url.substring(0, index);

@@ -32,18 +32,19 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.application.main.PaymentRepositories.PaymentDetailsRepository;
-import com.application.main.Repositories.DocDetailsRepository;
+import com.application.main.Repositories.DocumentDetailsRepository;
 import com.application.main.Repositories.InvoiceRepository;
 import com.application.main.Repositories.LoginUserRepository;
 import com.application.main.Repositories.PoSummaryRepository;
-import com.application.main.awsconfig.AwsService;
-import com.application.main.credentialmodel.DigitalSignValidationService;
-import com.application.main.model.DocDetails;
+import com.application.main.Repositories.PaymentRepository.PaymentDetailsRepository;
+import com.application.main.Service.DigitalSignValidationService;
+import com.application.main.Service.FileUploadService;
+import com.application.main.Service.InvoiceService;
+import com.application.main.model.DocumentDetails;
 import com.application.main.model.Invoice;
 import com.application.main.model.InvoiceDTO;
 import com.application.main.model.PoSummary;
-import com.application.main.model.UserDTO;
+import com.application.main.model.UserModel.UserDetails;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -52,7 +53,7 @@ import jakarta.servlet.http.HttpServletRequest;
 public class InvoiceController {
 
 	@Autowired
-	AwsService s3service;
+	FileUploadService s3service;
 
 	@Autowired
 	PaymentDetailsRepository paymentrepo;
@@ -61,7 +62,7 @@ public class InvoiceController {
 	PoSummaryRepository porepo;
 
 	@Autowired
-	DocDetailsRepository docdetailsrepository;
+	DocumentDetailsRepository docdetailsrepository;
 
 	@Autowired
 	DigitalSignValidationService digitalSignVerificationObject;
@@ -74,6 +75,9 @@ public class InvoiceController {
 
 	@Autowired
 	InvoiceRepository invoiceRepository;
+	
+	@Autowired
+	InvoiceService invoiceService;
 
 	@GetMapping("/versioninvoice")
 	public String version() {
@@ -166,15 +170,15 @@ public class InvoiceController {
 			return ResponseEntity.ok(HttpStatus.METHOD_FAILURE).ok("Please upload digitally signed invoice");
 		else System.out.println("Digitally Signed Invoice");
 		s3service.createBucket(token, username);
-		DocDetails InvoiceuploadResponse = s3service.uploadFile(token, invoiceFile, invoiceNumber, username);
-		List<DocDetails> suppDocNameList = new ArrayList<>();
+		DocumentDetails InvoiceuploadResponse = s3service.uploadFile(token, invoiceFile, invoiceNumber, username);
+		List<DocumentDetails> suppDocNameList = new ArrayList<>();
 
 		if (supportingDocument != null) {
 			System.out.println("-------UPLOADING SUPPORTING DOCUMENTS--------");
 			supportingDocument.forEach(document -> {
 				try {
 					int i = 0;
-					DocDetails documentUploadObject = s3service.uploadFile(token, document,
+					DocumentDetails documentUploadObject = s3service.uploadFile(token, document,
 							invoiceNumber.concat("SDoc" + String.valueOf(i++)), username);
 					suppDocNameList.add(documentUploadObject);
 				} catch (Exception e) {
@@ -185,18 +189,14 @@ public class InvoiceController {
 		}
 //		String msmecategory = porepo.findByPoNumber(poNumber).orElseGet(null).getMsmecategoy();
 		String msmecategory = null;
-		Map<String, Object> uploadMongoFile = s3service.uploadMongoFile(username, msmecategory, poNumber, paymentType,
+		return invoiceService.createInvoice(username, msmecategory, poNumber, paymentType,
 				deliveryPlant, invoiceDate, invoiceNumber, invoiceAmount, mobileNumber, email, alternateMobileNumber,
 				alternateEmail, remarks, ses, isagainstLC, isGst, isTredExchangePayment, factoryunitnumber,
 				isMDCCPayment, mdccnumber, sellerGst, buyerGst, bankaccountno, InvoiceuploadResponse, suppDocNameList);
-		if (uploadMongoFile == null)
-			return ResponseEntity.ok(HttpStatus.METHOD_FAILURE);
-		return ResponseEntity.ok(uploadMongoFile).ok(HttpStatus.OK)
-				.ok(invoiceNumber + " is Successfully Uploaded referenced to PO Number : " + poNumber);
 	}
 
 	@GetMapping("/getEicUsers")
-	public List<UserDTO> getEicUsernames() {
+	public List<UserDetails> getEicUsernames() {
 		return loginuserrepository.findByEic(true);
 	}
 
@@ -294,9 +294,9 @@ public class InvoiceController {
 //			}
 //
 //			// Update the file in the database (modify based on your entity structure)
-//			List<DocDetails> newFiles = new ArrayList<>();
+//			List<DocumentDetails> newFiles = new ArrayList<>();
 //			if (invoicefile != null) {
-//				DocDetails FileUploadResponse = s3service.uploadFile(invoicefile,
+//				DocumentDetails FileUploadResponse = s3service.uploadFile(invoicefile,
 //						invoiceOptional.get().getInvoiceNumber(), invoiceOptional.get().getUsername());
 //				newFiles.add(FileUploadResponse);
 //			}
@@ -305,9 +305,9 @@ public class InvoiceController {
 //
 //			// Update the supporting document in the database (modify based on your entity
 //			// structure)
-//			List<DocDetails> newSupportingDocuments = new ArrayList<>();
+//			List<DocumentDetails> newSupportingDocuments = new ArrayList<>();
 //			if (supportingDocument != null) {
-//				DocDetails DocumentUploadResponse = s3service.uploadFile(supportingDocument,
+//				DocumentDetails DocumentUploadResponse = s3service.uploadFile(supportingDocument,
 //						invoiceOptional.get().getInvoiceNumber(), invoiceOptional.get().getUsername());
 //				newSupportingDocuments.add(DocumentUploadResponse);
 //			}

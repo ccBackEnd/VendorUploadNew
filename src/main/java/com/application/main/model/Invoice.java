@@ -23,6 +23,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @Builder
+
 @Document(collection = "Invoice")
 public class Invoice {
 	
@@ -54,8 +55,9 @@ public class Invoice {
 	private String invoiceNumber;
 	@Default
 	private String status = "new";
-	private List<DocDetails> supportingDocument;
-	private List<DocDetails> invoiceFile;
+	private List<StatusHistory> statushistory;
+	private List<DocumentDetails> supportingDocument;
+	private List<DocumentDetails> invoiceFile;
 	private String invoiceAmount;
 	private String mobileNumber;
 	private String email;

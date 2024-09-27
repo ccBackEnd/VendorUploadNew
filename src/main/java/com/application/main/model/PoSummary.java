@@ -42,15 +42,15 @@ public class PoSummary {
 	private String username;
 	private String type;
 	private String url;
-	private DocDetails doc;
+	private DocumentDetails doc;
 	private String msmecategoy;
 	
 	
-	public DocDetails getDoc() {
+	public DocumentDetails getDoc() {
 		return doc;
 	}
 
-	public void setDoc(DocDetails doc) {
+	public void setDoc(DocumentDetails doc) {
 		this.doc = doc;
 	}
 
