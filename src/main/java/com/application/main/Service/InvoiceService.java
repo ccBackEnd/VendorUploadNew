@@ -139,7 +139,7 @@ public class InvoiceService {
 			if (po.isPresent()) {
 				logApp.info("Fetching PurchaseOrder Against Invoice with poNumber : " + poNumber);
 				PoSummary poObject = po.get();
-				if (poObject.getInvoiceidlist() != null || !poObject.getInvoiceidlist().isEmpty()) {
+				if (poObject.getInvoiceidlist() != null && !poObject.getInvoiceidlist().isEmpty()) {
 					invoicemap = poObject.getInvoiceidlist();
 				}
 					invoicemap.put(invoice.getId(), invoice.getInvoiceNumber());
