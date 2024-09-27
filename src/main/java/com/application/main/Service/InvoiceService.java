@@ -1,6 +1,7 @@
 package com.application.main.Service;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -11,6 +12,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -20,6 +23,7 @@ import com.application.main.Repositories.DocumentDetailsRepository;
 import com.application.main.Repositories.InvoiceRepository;
 import com.application.main.Repositories.LoginUserRepository;
 import com.application.main.Repositories.PoSummaryRepository;
+import com.application.main.Repositories.NotificationRepository.NotificationRepository;
 import com.application.main.model.DocumentDetails;
 import com.application.main.model.Invoice;
 import com.application.main.model.PoSummary;
@@ -28,6 +32,8 @@ import com.application.main.model.NotificationModel.VendorPortalNotification;
 
 @Service
 public class InvoiceService {
+
+	Logger logApp = LoggerFactory.getLogger(InvoiceService.class);
 
 	DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 	@Autowired
@@ -41,6 +47,9 @@ public class InvoiceService {
 
 	@Autowired
 	DocumentDetailsRepository documentDetailsRepository;
+
+	@Autowired
+	NotificationRepository notificationRepository;
 
 	KafkaTemplate<String, Invoice> ktemplate;
 	KafkaTemplate<String, VendorPortalNotification> notificationtemplate;
@@ -60,7 +69,7 @@ public class InvoiceService {
 		statuslist.add(statushistory);
 		invoice.setStatushistory(statuslist);
 		invoice.setStatus("Sent");
-		
+
 		invoice.setInvoiceurl(invoicedetails.getUrl());
 		invoice.setEic(porepo.findByPoNumber(poNumber).get().getEic());
 		invoice.setDeliveryPlant(deliveryPlant);
@@ -82,7 +91,9 @@ public class InvoiceService {
 		invoice.setInvoiceAmount(invoiceAmount);
 
 		// Invoice DATE
-		System.out.println("------- Invoice referenced with this invoice date :-  " + invoice.getInvoiceDate());
+		System.out.println("------- Invoice referenced with this invoice date :-  " + invoiceDate);
+		LocalDate date = LocalDate.parse(invoiceDate, formatter);
+		invoice.setInvoiceDate(date);
 		invoice.setInvoiceNumber(invoiceNumber);
 		invoice.setCurrentDateTime(LocalDateTime.now());
 		System.err.println("-------------Invoice with : " + invoiceNumber + " Saved Successfully-------------------");
@@ -92,7 +103,6 @@ public class InvoiceService {
 		String eicusername = loginrepo.findByUsername(invoice.getEic()).get().getUsername();
 		usernamelist.add(eicusername);
 		invoice.setUsername(usernamelist);
-
 		boolean updated = updatepurchaseorder(poNumber, invoice);
 		if (updated)
 			invoice = invoicerepository.save(invoice);
@@ -103,7 +113,11 @@ public class InvoiceService {
 		VendorPortalNotification vendornotification = new VendorPortalNotification(null, invoice.getEic(),
 				LocalDateTime.now(), invoiceNumber, invoicedetails.getName(), username, notificationmessage, "unread",
 				null);
+		System.out.println("Notification Initiated...");
+		vendornotification = notificationRepository.save(vendornotification);
+		logApp.info("Notification Sending...");
 		notificationtemplate.send("vendorportalnotification", vendornotification);
+		logApp.info("Notification Sent Properly...");
 		Map<String, Object> responseData = new HashMap<>();
 		System.err.println("---------------------------------");
 		Set<String> remarksSet = new HashSet<>();
@@ -121,24 +135,24 @@ public class InvoiceService {
 	private boolean updatepurchaseorder(String poNumber, Invoice invoice) {
 		try {
 			Optional<PoSummary> po = porepo.findByPoNumber(poNumber);
-
+			Map<String, String> invoicemap = new HashMap<>();
 			if (po.isPresent()) {
-
-				if (po.get().getInvoiceidlist() == null || po.get().getInvoiceidlist().isEmpty()) {
-					Map<String, String> invoicemap = new HashMap<>();
-					invoicemap.put(invoice.getId(), invoice.getInvoiceNumber());
-					po.get().setNoOfInvoices(po.get().getNoOfInvoices() + 1);
-					po.get().setInvoiceidlist(invoicemap);
-				} else {
-					po.get().getInvoiceidlist().put(invoice.getId(), invoice.getInvoiceNumber());
-					po.get().setNoOfInvoices(po.get().getNoOfInvoices() + 1);
+				logApp.info("Fetching PurchaseOrder Against Invoice with poNumber : " + poNumber);
+				PoSummary poObject = po.get();
+				if (poObject.getInvoiceidlist() != null || !poObject.getInvoiceidlist().isEmpty()) {
+					invoicemap = poObject.getInvoiceidlist();
 				}
+					invoicemap.put(invoice.getId(), invoice.getInvoiceNumber());
+					poObject.setInvoiceidlist(invoicemap);
+					poObject.setNoOfInvoices(poObject.getNoOfInvoices() + 1);
 				System.out.println("No. of Invoices in Referenced Po with poNumber : " + poNumber + " is : "
-						+ po.get().getNoOfInvoices());
-				porepo.save(po.get());
+						+ poObject.getNoOfInvoices());
+				porepo.save(poObject);
 				return true;
-			} else
+			} else {
+				logApp.info("PURCHASE ORDER NOT FOUND...");
 				return false;
+			}
 //			return ResponseEntity.ok(Map.of("Error Found , PO is Not found or Not accesible", HttpStatus.SC_CONFLICT));
 		} catch (Exception e) {
 			throw e;
