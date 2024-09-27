@@ -103,9 +103,8 @@ public class InvoiceService {
 		String eicusername = loginrepo.findByUsername(invoice.getEic()).get().getUsername();
 		usernamelist.add(eicusername);
 		invoice.setUsername(usernamelist);
-		boolean updated = updatepurchaseorder(poNumber, invoice);
-		if (updated)
-			invoice = invoicerepository.save(invoice);
+		invoice = invoicerepository.save(invoice);
+		updatepurchaseorder(poNumber, invoice);
 
 		System.out.println("Invoice with details :-> \n" + invoice.toString() + " is saved succesfully");
 		String notificationmessage = "Invoice with " + invoiceNumber + " & with amount = " + invoiceAmount
@@ -132,7 +131,7 @@ public class InvoiceService {
 		return ResponseEntity.ok(responseData);
 	}
 
-	private boolean updatepurchaseorder(String poNumber, Invoice invoice) {
+	private void updatepurchaseorder(String poNumber, Invoice invoice) {
 		try {
 			Optional<PoSummary> po = porepo.findByPoNumber(poNumber);
 			Map<String, String> invoicemap = new HashMap<>();
@@ -148,10 +147,8 @@ public class InvoiceService {
 				System.out.println("No. of Invoices in Referenced Po with poNumber : " + poNumber + " is : "
 						+ poObject.getNoOfInvoices());
 				porepo.save(poObject);
-				return true;
 			} else {
 				logApp.info("PURCHASE ORDER NOT FOUND...");
-				return false;
 			}
 //			return ResponseEntity.ok(Map.of("Error Found , PO is Not found or Not accesible", HttpStatus.SC_CONFLICT));
 		} catch (Exception e) {
