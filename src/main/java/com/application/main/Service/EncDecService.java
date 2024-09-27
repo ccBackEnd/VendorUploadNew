@@ -4,6 +4,9 @@ import java.util.Base64;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
+
+import org.springframework.stereotype.Service;
+@Service
 public class EncDecService {
 
 	    public static final String ALGORITHM = "AES";

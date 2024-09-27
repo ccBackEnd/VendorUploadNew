@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
+import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.application.main.Repositories.InvoiceRepository;
@@ -29,7 +30,7 @@ import com.application.main.model.NotificationModel.VendorPortalNotification;
 import com.application.main.model.UserModel.UserDetails;
 
 import jakarta.servlet.http.HttpServletRequest;
-
+@Service
 public class InboxService {
 
 	@Autowired

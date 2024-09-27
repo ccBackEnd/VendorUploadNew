@@ -167,7 +167,7 @@ public class InvoiceController {
 		System.out.println("---------------Invoice Creation Initiated !!!------------  " + username);
 		boolean signed = digitalSignVerificationObject.verify(invoiceFile);
 		if (!signed)
-			return ResponseEntity.ok(HttpStatus.METHOD_FAILURE).ok("Please upload digitally signed invoice");
+			return ResponseEntity.ok(HttpStatus.METHOD_FAILURE).ok("Please upload a valid digitally signed invoice");
 		else System.out.println("Digitally Signed Invoice");
 		s3service.createBucket(token, username);
 		DocumentDetails InvoiceuploadResponse = s3service.uploadFile(token, invoiceFile, invoiceNumber, username);

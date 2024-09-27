@@ -14,6 +14,7 @@ import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Service;
 
 import com.application.main.Repositories.DocumentDetailsRepository;
 import com.application.main.Repositories.InvoiceRepository;
@@ -25,6 +26,7 @@ import com.application.main.model.PoSummary;
 import com.application.main.model.StatusHistory;
 import com.application.main.model.NotificationModel.VendorPortalNotification;
 
+@Service
 public class InvoiceService {
 
 	DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");

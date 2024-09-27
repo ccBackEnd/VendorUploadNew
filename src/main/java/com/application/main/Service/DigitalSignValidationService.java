@@ -298,7 +298,17 @@ public class DigitalSignValidationService {
 	// Subfilter validation logic: Ensures any valid subfilter passes
 	private boolean isValidSubFilter(String subFilter) {
 		logApp.info("Checking for Valid SubFilter...");
-		return subFilter.contains("ETSI.CAdES.detached") && subFilter.contains("ETSI.RFC3161");
+		boolean verified = false;
+		 if(subFilter.contains("ETSI.CAdES.detached") || subFilter.contains("adbe.pkcs7.detached")) {
+			 logApp.info(subFilter + " : non verified Timestamp");
+			 verified = true;
+		 }
+		 if(subFilter.contains("ETSI.RFC3161")) {
+			 logApp.info(subFilter + " : verified Timestamp");
+			
+		 }
+		 return verified;
+		 
 	}
 
 	// Processes and validates each PDF signature
@@ -380,8 +390,10 @@ public class DigitalSignValidationService {
 		}
 
 		Signature rsaSignature = Signature.getInstance(getSignatureAlgorithm(digest.getAlgorithm()));
-		if (rsaSignature == null)
+		if (rsaSignature == null) {
+			logApp.error("NULL ALGORITHM");
 			return false;
+		}
 		rsaSignature.initVerify(pubKey);
 		rsaSignature.update(signerInfo.getEncodedSignedAttributes());
 		return rsaSignature.verify(signerInfo.getSignature());
@@ -389,6 +401,7 @@ public class DigitalSignValidationService {
 
 	// Determine the signature algorithm based on the digest algorithm
 	private String getSignatureAlgorithm(String digestAlgorithm) {
+		logApp.info("Getting Signature Algorithm...");
 		switch (digestAlgorithm) {
 		case "2.16.840.1.101.3.4.2.1":
 			return "SHA256withRSA";
