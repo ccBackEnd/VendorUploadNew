@@ -21,13 +21,13 @@ public class InvoiceListener {
 	InvoiceHistoryRepository sentinvrepo;
 	Logger logApp = LoggerFactory.getLogger(InvoiceListener.class);
 
-
 	@KafkaListener(topics = "Invoiceinbox")
 	public void recievedInvoice(Invoice invoice) {
 		try{
 			logApp.info("Invoice Recieved !!");
 			Map<String , Object> response = new HashMap<>();
 			ArrayList<String> sentlist = invoice.getSentrevertidlist();
+			if(sentlist==null) return;
 			String id = sentlist.get(sentlist.size()-1);
 		InvoicesHistoryCollection recievedInvoice = sentinvrepo.findById(id).get();
 		response.put("LatestInvoiceObjectId",id);	
