@@ -69,6 +69,8 @@ public class InvoiceService {
 			boolean isagainstLC, boolean isGst, boolean isTredExchangePayment, String factoryunitnumber,
 			boolean isMDCCPayment, String mdccnumber, String sellerGst, String buyerGst, String bankaccountno,
 			DocumentDetails invoicedetails, List<DocumentDetails> suppDocNameList) throws IOException {
+		if (invoicerepository.existsByInvoiceNumber(invoiceNumber))
+			return ResponseEntity.ok("Invoice with Number " + invoiceNumber + " Already Exists");
 		System.out.println("Invoice creation Initiated");
 		Invoice invoice = new Invoice();
 		invoice.setPoNumber(poNumber);

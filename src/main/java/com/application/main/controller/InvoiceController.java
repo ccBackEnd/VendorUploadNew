@@ -11,6 +11,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -53,7 +55,7 @@ import jakarta.servlet.http.HttpServletRequest;
 public class InvoiceController {
 
 	@Autowired
-	FileUploadService s3service;
+	FileUploadService fileUploadService;
 
 	@Autowired
 	PaymentDetailsRepository paymentrepo;
@@ -87,6 +89,8 @@ public class InvoiceController {
 	public InvoiceController(MongoTemplate mongoTemplate) {
 		this.mongoTemplate = mongoTemplate;
 	}
+	
+	Logger logApp = LoggerFactory.getLogger(InvoiceController.class);
 
 	@GetMapping("/uploadInvoice/poSearch")
 	public Set<?> getAllPoNumber(@RequestParam(value = "ponumber") String ponumber) {
@@ -160,25 +164,24 @@ public class InvoiceController {
 			@RequestParam(name = "supportingDocument", required = false) List<MultipartFile> supportingDocument,
 			HttpServletRequest request) throws Exception {
 
-		if (invoiceRepository.existsByInvoiceNumber(invoiceNumber))
-			return ResponseEntity.ok("Invoice with Number " + invoiceNumber + " Already Exists");
 		String token = request.getHeader("Authorization").replace("Bearer ", "");
-		String username = s3service.getUserNameFromToken(token);
-		System.out.println("---------------Invoice Creation Initiated !!!------------  " + username);
+		String username = fileUploadService.getUserNameFromToken(token);
+		logApp.info("---------------Invoice Creation Initiated !!!------------  ");
 		boolean signed = digitalSignVerificationObject.verify(invoiceFile);
-		if (!signed)
+		if (!signed) {
+			logApp.error("Digital Signed not verified");
 			return ResponseEntity.ok(HttpStatus.METHOD_FAILURE).ok("Please upload a valid digitally signed invoice");
-		else System.out.println("Digitally Signed Invoice");
-		s3service.createBucket(token, username);
-		DocumentDetails InvoiceuploadResponse = s3service.uploadFile(token, invoiceFile, invoiceNumber, username);
+		}
+		else logApp.info("Digitally Signed Invoice");
+		fileUploadService.createBucket(token, username);
+		DocumentDetails InvoiceuploadResponse = fileUploadService.uploadFile(token, invoiceFile, invoiceNumber, username);
 		List<DocumentDetails> suppDocNameList = new ArrayList<>();
-
 		if (supportingDocument != null) {
 			System.out.println("-------UPLOADING SUPPORTING DOCUMENTS--------");
 			supportingDocument.forEach(document -> {
 				try {
 					int i = 0;
-					DocumentDetails documentUploadObject = s3service.uploadFile(token, document,
+					DocumentDetails documentUploadObject = fileUploadService.uploadFile(token, document,
 							invoiceNumber.concat("SDoc" + String.valueOf(i++)), username);
 					suppDocNameList.add(documentUploadObject);
 				} catch (Exception e) {
@@ -296,7 +299,7 @@ public class InvoiceController {
 //			// Update the file in the database (modify based on your entity structure)
 //			List<DocumentDetails> newFiles = new ArrayList<>();
 //			if (invoicefile != null) {
-//				DocumentDetails FileUploadResponse = s3service.uploadFile(invoicefile,
+//				DocumentDetails FileUploadResponse = fileUploadService.uploadFile(invoicefile,
 //						invoiceOptional.get().getInvoiceNumber(), invoiceOptional.get().getUsername());
 //				newFiles.add(FileUploadResponse);
 //			}
@@ -307,7 +310,7 @@ public class InvoiceController {
 //			// structure)
 //			List<DocumentDetails> newSupportingDocuments = new ArrayList<>();
 //			if (supportingDocument != null) {
-//				DocumentDetails DocumentUploadResponse = s3service.uploadFile(supportingDocument,
+//				DocumentDetails DocumentUploadResponse = fileUploadService.uploadFile(supportingDocument,
 //						invoiceOptional.get().getInvoiceNumber(), invoiceOptional.get().getUsername());
 //				newSupportingDocuments.add(DocumentUploadResponse);
 //			}
@@ -333,7 +336,7 @@ public class InvoiceController {
 			HttpServletRequest request) {
 
 		String token = request.getHeader("Authorization").replace("Bearer ", "");
-		String username = s3service.getUserNameFromToken(token);
+		String username = fileUploadService.getUserNameFromToken(token);
 		Page<InvoiceDTO> invoicesByUsername = convertInvoicetoInvoiceDTO(
 				convertListToPage(invoiceRepository.findByUsernameContaining(username), page, size));
 		long invoiceCountByUsername = invoicesByUsername.getTotalElements();
@@ -454,7 +457,7 @@ public class InvoiceController {
 			@RequestHeader(value = "pageSize", defaultValue = "10", required = false) int size,
 			HttpServletRequest request) {
 		String token = request.getHeader("Authorization").replace("Bearer ", "");
-		String username = s3service.getUserNameFromToken(token);
+		String username = fileUploadService.getUserNameFromToken(token);
 		Page<InvoiceDTO> invoices = convertInvoicetoInvoiceDTO(
 				convertListToPage(invoiceRepository.findByUsernameContaining(username), page, size));
 		if (invoices.isEmpty()) {
